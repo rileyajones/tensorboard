@@ -235,10 +235,14 @@ limitations under the License.
             (change)="onSelectionToggle.emit(item)"
           ></mat-checkbox>
         </span>
-        <tb-experiment-alias
+        <ng-container 
           *ngSwitchCase="RunsTableColumn.EXPERIMENT_NAME"
-          [alias]="item.experimentAlias"
-        ></tb-experiment-alias>
+        >
+          <tb-experiment-alias
+            *ngIf="item.experimentAlias"
+            [alias]="item.experimentAlias"
+          ></tb-experiment-alias>
+        </ng-container>
 
         <span *ngSwitchCase="RunsTableColumn.RUN_NAME" class="name"
           >{{ item.run.name }}</span
