@@ -108,13 +108,17 @@ export interface TooltipColumn {
   evaluate: (p: Point, status?: TooltipColumnState) => string;
 }
 
+function toNumber(value: number | { valueOf(): number; }): number {
+  return typeof value === 'number' ? value : value.valueOf();
+}
+
 /* Create a formatter function that will switch between exponential and
  * regular display depending on the scale of the number being formatted,
  * and show `digits` significant digits.
  */
-export function multiscaleFormatter(digits: number): (v: number) => string {
-  return (v: number) => {
-    let absv = Math.abs(v);
+export function multiscaleFormatter(digits: number) {
+  return (v: number | { valueOf(): number; }) => {
+    let absv = Math.abs(toNumber(v));
     if (absv < 1e-15) {
       // Sometimes zero-like values get an annoying representation
       absv = 0;
@@ -127,7 +131,7 @@ export function multiscaleFormatter(digits: number): (v: number) => string {
     } else {
       f = d3.format('.' + digits + '~g');
     }
-    return f(v);
+    return f(toNumber(v));
   };
 }
 

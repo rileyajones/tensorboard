@@ -26,6 +26,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import {fromEvent, Subject} from 'rxjs';
+import {multiscaleFormatter} from '../../../components/vz_chart_helpers/vz-chart-helpers';
 import {takeUntil} from 'rxjs/operators';
 import * as d3 from '../../third_party/d3';
 import {HCLColor} from '../../third_party/d3';
@@ -114,7 +115,7 @@ export class HistogramComponent implements AfterViewInit, OnChanges, OnDestroy {
   };
   scales: Scales | null = null;
   private formatters = {
-    binNumber: d3.format('.3~s'),
+    binNumber: multiscaleFormatter(4),
     count: d3.format('.3n'),
     // DefinitelyTyped is incorrect that the `timeFormat` only takes `Date` as
     // an input. Better type it for downstream types.

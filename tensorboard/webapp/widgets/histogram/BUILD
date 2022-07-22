@@ -22,6 +22,7 @@ tf_ng_module(
     ],
     deps = [
         ":types",
+        "//tensorboard/components/vz_chart_helpers",
         "//tensorboard/webapp/third_party:d3",
         "//tensorboard/webapp/widgets:resize_detector",
         "//tensorboard/webapp/widgets/card_fob",
