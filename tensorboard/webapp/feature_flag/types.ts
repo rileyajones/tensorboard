@@ -52,4 +52,6 @@ export interface FeatureFlags {
   forceSvg: boolean;
   // Whether to enable the "sticky" data table in scalar cards.
   enabledScalarDataTable: boolean;
+  // Shows the feature flags modal
+  enableShowFlags: boolean;
 }

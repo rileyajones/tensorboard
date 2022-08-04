@@ -19,9 +19,7 @@ limitations under the License.
   <table>
     <ng-container *ngFor="let flag of getFlagKeys();">
       <tr>
-        <mat-checkbox
-          [checked]="featureFlags[flag]"
-          (change)="flagChanged(flag)"
+        <mat-checkbox [checked]="featureFlags[flag]" (change)="toggleFlag(flag)"
           >Enabled</mat-checkbox
         >
         {{flag}}

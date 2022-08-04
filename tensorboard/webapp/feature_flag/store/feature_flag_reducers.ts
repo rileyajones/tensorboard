@@ -43,6 +43,15 @@ const reducer = createReducer<FeatureFlagState>(
       },
     };
   }),
+  on(actions.overriddenFeatureFlagsChanged, (state, newOverrides) => {
+    return {
+      ...state,
+      flagOverrides: {
+        ...state.flagOverrides,
+        ...newOverrides,
+      },
+    };
+  }),
   on(globalSettingsLoaded, (state, {partialSettings}) => {
     if (!partialSettings.themeOverride) {
       return state;

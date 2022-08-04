@@ -15,14 +15,22 @@ limitations under the License.
 import {Component} from '@angular/core';
 import {Store} from '@ngrx/store';
 import {State} from '../../app_state';
+import {overriddenFeatureFlagsChanged} from '../actions/feature_flag_actions';
 import {getFeatureFlags} from '../store/feature_flag_selectors';
+import {FeatureFlags} from '../types';
+
 @Component({
   selector: 'feature-flag-page',
   template: `<feature-flag-page-component
     [featureFlags]="featureFlags$ | async"
+    (flagsChanged)="onFlagsChanged($event)"
   ></feature-flag-page-component>`,
 })
 export class FeatureFlagPageContainer {
   constructor(private readonly store: Store<State>) {}
   readonly featureFlags$ = this.store.select(getFeatureFlags);
+
+  onFlagsChanged(flags: Partial<FeatureFlags>) {
+    this.store.dispatch(overriddenFeatureFlagsChanged(flags));
+  }
 }

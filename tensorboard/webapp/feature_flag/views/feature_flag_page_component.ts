@@ -12,20 +12,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-import {Component, Input} from '@angular/core';
-import {FeatureFlagState} from '../store/feature_flag_types';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {FeatureFlags} from '../types';
+
 @Component({
   selector: 'feature-flag-page-component',
   templateUrl: `feature_flag_page.ng.html`,
 })
 export class FeatureFlagPageComponent {
-  @Input() featureFlags!: FeatureFlagState;
+  @Input() featureFlags!: FeatureFlags;
+
+  @Output() flagsChanged = new EventEmitter<Partial<FeatureFlags>>();
 
   getFlagKeys(): string[] {
     return Object.keys(this.featureFlags);
   }
 
-  flagChanged(flag: string) {
-    // TODO: dispatch action which stores new flag states and updates state.
+  toggleFlag(flag: keyof FeatureFlags) {
+    this.flagsChanged.emit({
+      ...this.featureFlags,
+      [flag]: !this.featureFlags[flag],
+    });
   }
 }

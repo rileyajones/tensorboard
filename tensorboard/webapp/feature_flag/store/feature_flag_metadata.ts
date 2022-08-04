@@ -122,6 +122,11 @@ export const FeatureFlagMetadataMap: FeatureFlagMetadataMapType<FeatureFlags> =
       defaultValue: false,
       queryParamOverride: null,
     },
+    enableShowFlags: {
+      defaultValue: false,
+      parseValue: parseBoolean,
+      queryParamOverride: 'showFlags',
+    }
   };
 
 /**
