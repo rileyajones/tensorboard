@@ -16,7 +16,7 @@ import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Store} from '@ngrx/store';
 import {State} from '../app_state';
-import {overriddenFeatureFlagsChanged} from '../feature_flag/actions/feature_flag_actions';
+import {featureFlagOverrideChanged} from '../feature_flag/actions/feature_flag_actions';
 import {
   getFeatureFlags,
   getShowFlagsEnabled,
@@ -57,8 +57,8 @@ export class TensorBoardWrapperComponent {
         this.featureFlagsDialog = this.dialog.open(FeatureFlagPageContainer);
         this.featureFlagsDialog.afterClosed().subscribe(() => {
           this.store.dispatch(
-            overriddenFeatureFlagsChanged({
-              enableShowFlags: false,
+            featureFlagOverrideChanged({
+              flags: {enableShowFlags: false},
             })
           );
         });

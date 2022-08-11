@@ -33,6 +33,7 @@ export function buildFeatureFlag(
     enabledCardWidthSetting: false,
     forceSvg: false,
     enabledScalarDataTable: false,
+    enableShowFlags: false,
     ...override,
   };
 }

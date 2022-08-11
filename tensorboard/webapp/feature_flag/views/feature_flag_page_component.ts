@@ -14,24 +14,29 @@ limitations under the License.
 ==============================================================================*/
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {FeatureFlags} from '../types';
+import {
+  FeatureFlagState,
+  FeatureFlagStatus,
+  FeatureFlagStatusEvent,
+} from './types';
 
 @Component({
   selector: 'feature-flag-page-component',
+  styleUrls: ['feature_flag_page_style.css'],
   templateUrl: `feature_flag_page.ng.html`,
 })
 export class FeatureFlagPageComponent {
-  @Input() featureFlags!: FeatureFlags;
+  @Input() featureFlagStatuses!: Array<FeatureFlagState<keyof FeatureFlags>>;
 
-  @Output() flagsChanged = new EventEmitter<Partial<FeatureFlags>>();
+  @Output() flagChanged = new EventEmitter<FeatureFlagStatusEvent>();
 
-  getFlagKeys(): string[] {
-    return Object.keys(this.featureFlags);
+  @Output() flagsReset = new EventEmitter();
+
+  setFlag(flag: keyof FeatureFlags, status: FeatureFlagStatus) {
+    this.flagChanged.emit({flag, status});
   }
 
-  toggleFlag(flag: keyof FeatureFlags) {
-    this.flagsChanged.emit({
-      ...this.featureFlags,
-      [flag]: !this.featureFlags[flag],
-    });
+  resetFlags() {
+    this.flagsReset.emit();
   }
 }

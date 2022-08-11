@@ -16,6 +16,7 @@ tf_ng_module(
         "feature_flag_module.ts",
         "feature_flag_page_component.ts",
         "feature_flag_page_container.ts",
+        "types.ts",
     ],
     assets = [
         ":style",
@@ -31,5 +32,6 @@ tf_ng_module(
         "@npm//@angular/common",
         "@npm//@angular/core",
         "@npm//@ngrx/store",
+        "@npm//rxjs",
     ],
 )
