@@ -106,6 +106,7 @@ export class ScalarCardComponent<Downloader> {
     new EventEmitter<TimeSelectionToggleAffordance>();
 
   @Output() onLineChartZoom = new EventEmitter<Extent>();
+  @Output() onLineChartReset = new EventEmitter();
 
   // Line chart may not exist when was never visible (*ngIf).
   @ViewChild(LineChartComponent)

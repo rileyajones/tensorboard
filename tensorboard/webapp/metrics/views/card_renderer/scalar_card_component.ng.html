@@ -113,6 +113,7 @@ limitations under the License.
     [useDarkMode]="useDarkMode"
     (onViewBoxOverridden)="isViewBoxOverridden = $event"
     (viewBoxChanged)="onLineChartZoom.emit($event)"
+    (onViewBoxReset)="onLineChartReset.emit($event)"
     [customVisTemplate]="lineChartCustomVis"
     [customChartOverlayTemplate]="lineChartCustomXAxisVis"
   ></line-chart>

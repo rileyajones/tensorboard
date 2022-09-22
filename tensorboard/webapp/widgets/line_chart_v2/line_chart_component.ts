@@ -142,6 +142,9 @@ export class LineChartComponent
   @Output()
   viewBoxChanged = new EventEmitter<Extent>();
 
+  @Output()
+  onViewBoxReset = new EventEmitter();
+
   private onViewBoxOverridden = new ReplaySubject<boolean>(1);
 
   /**
@@ -494,7 +497,7 @@ export class LineChartComponent
     this.setIsViewBoxOverridden(false);
     this.isViewBoxChanged = true;
     this.updateLineChart();
-    this.viewBoxChanged.emit(this.viewBox);
+    this.onViewBoxReset.emit();
   }
 
   private setIsViewBoxOverridden(newValue: boolean): void {

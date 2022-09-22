@@ -125,6 +125,10 @@ function areSeriesEqual(
   });
 }
 
+const DEFAULT_ZOOM: MinMaxStep = Object.freeze({
+  minStep: -Infinity,
+  maxStep: Infinity,
+});
 @Component({
   selector: 'scalar-card',
   template: `
@@ -157,6 +161,7 @@ function areSeriesEqual(
       (onTimeSelectionChanged)="onTimeSelectionChanged($event)"
       (onStepSelectorToggled)="onStepSelectorToggled($event)"
       (onLineChartZoom)="onLineChartZoom($event)"
+      (onLineChartReset)="onLineChartReset()"
     ></scalar-card-component>
   `,
   styles: [
@@ -190,20 +195,19 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
   isPinned$?: Observable<boolean>;
   dataSeries$?: Observable<ScalarCardDataSeries[]>;
   chartMetadataMap$?: Observable<ScalarCardSeriesMetadataMap>;
-  linkedTimeSelection$?: Observable<TimeSelectionView | null>;
   stepSelectorTimeSelection$?: Observable<TimeSelection | null>;
   minMaxSteps$?: Observable<MinMaxStep>;
   columnHeaders$?: Observable<ColumnHeaders[]>;
 
-  lineChartZoom$ = new BehaviorSubject<MinMaxStep>({
-    minStep: -Infinity,
-    maxStep: Infinity,
-  });
+  lineChartZoom$ = new BehaviorSubject<MinMaxStep>(DEFAULT_ZOOM);
 
   onVisibilityChange({visible}: {visible: boolean}) {
     this.isVisible = visible;
   }
 
+  readonly linkedTimeSelection$ = new BehaviorSubject<TimeSelectionView | null>(
+    null
+  );
   readonly useDarkMode$ = this.store.select(getDarkModeEnabled);
   readonly ignoreOutliers$ = this.store.select(getMetricsIgnoreOutliers);
   readonly tooltipSort$ = this.store.select(getMetricsTooltipSort);
@@ -347,18 +351,25 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
       shareReplay(1)
     );
 
-    this.minMaxSteps$ = combineLatest([
-      partitionedSeries$,
-      this.lineChartZoom$,
-    ]).pipe(
-      map(([series, viewPort]) => {
+    const minMaxStepsInSeries$ = partitionedSeries$.pipe(
+      map((series) => {
         const allPoints = series
           .map(({points}) => points.map(({x}) => x))
           .flat();
-        const min = Math.min(...allPoints);
-        const max = Math.max(...allPoints);
-        const minStep = Math.max(min, viewPort.minStep);
-        const maxStep = Math.min(max, viewPort.maxStep);
+        const minStep = Math.min(...allPoints);
+        const maxStep = Math.max(...allPoints);
+
+        return {minStep, maxStep};
+      })
+    );
+
+    this.minMaxSteps$ = combineLatest([
+      minMaxStepsInSeries$,
+      this.lineChartZoom$,
+    ]).pipe(
+      map(([seriesMinMax, viewPort]) => {
+        const minStep = Math.max(seriesMinMax.minStep, viewPort.minStep);
+        const maxStep = Math.min(seriesMinMax.maxStep, viewPort.maxStep);
 
         return {minStep, maxStep};
       })
@@ -398,25 +409,41 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
       startWith([] as ScalarCardDataSeries[])
     );
 
-    this.linkedTimeSelection$ = combineLatest([
+    combineLatest([
       this.minMaxSteps$,
       this.store.select(getMetricsLinkedTimeEnabled),
       this.store.select(getMetricsLinkedTimeSelection),
       this.store.select(getMetricsXAxisType),
-    ]).pipe(
-      map(
-        ([{minStep, maxStep}, linkedTimeEnabled, timeSelection, xAxisType]) => {
-          if (
-            !linkedTimeEnabled ||
-            xAxisType !== XAxisType.STEP ||
-            !timeSelection
-          ) {
-            return null;
-          }
-
-          return maybeClipLinkedTimeSelection(timeSelection, minStep, maxStep);
+    ]).subscribe(
+      ([{minStep, maxStep}, linkedTimeEnabled, timeSelection, xAxisType]) => {
+        if (
+          !linkedTimeEnabled ||
+          xAxisType !== XAxisType.STEP ||
+          !timeSelection
+        ) {
+          this.linkedTimeSelection$.next(null);
+          return;
         }
-      )
+
+        const potentiallyClippedTimeSelection = maybeClipLinkedTimeSelection(
+          timeSelection,
+          minStep,
+          maxStep
+        );
+
+        const zoomedViewBox = this.lineChartZoom$.getValue();
+        const isViewBoxDefault =
+          zoomedViewBox.minStep === DEFAULT_ZOOM.minStep &&
+          zoomedViewBox.maxStep === DEFAULT_ZOOM.maxStep;
+        // If zoom has changed, the clipped status should not be changed.
+        if (!isViewBoxDefault) {
+          potentiallyClippedTimeSelection.clipped =
+            this.linkedTimeSelection$.getValue()?.clipped ?? false;
+        }
+        console.log(potentiallyClippedTimeSelection);
+
+        this.linkedTimeSelection$.next(potentiallyClippedTimeSelection);
+      }
     );
 
     this.columnHeaders$ = combineLatest([
@@ -615,6 +642,10 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
 
   onStepSelectorToggled(affordance: TimeSelectionToggleAffordance) {
     this.store.dispatch(stepSelectorToggled({affordance}));
+  }
+
+  onLineChartReset() {
+    this.lineChartZoom$.next(DEFAULT_ZOOM);
   }
 
   onLineChartZoom(lineChartViewBox: Extent) {
