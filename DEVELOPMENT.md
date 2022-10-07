@@ -117,11 +117,17 @@ Build the image using the following command from the root directory.
 `docker build -t tensorflow/tensorboard .`
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 The image will only need to be rebuilt when a new dependency is added or an existing
 dependency is updated.
 
 =======
 >>>>>>> de7b78537 (add ibazel update development.md)
+=======
+The image will only need to be rebuilt when a new dependency is added or an existing
+dependency is updated.
+
+>>>>>>> cd574540b (tweak Dockerfile RUN statement order, add a line to DEVELOPMENT.md describing when the image should be updated)
 Once the image is successfully built you can easily start up a development environment
 with the following command
 
@@ -137,6 +143,9 @@ docker run \
 TensorBoard will now be accessible at [localhost:6006](http://localhost:6006)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> cd574540b (tweak Dockerfile RUN statement order, add a line to DEVELOPMENT.md describing when the image should be updated)
 For continued development you may want to either save the compiled project with
 another volume mount or else plan to reuse the same container to prevent having
 to repeatedly clean compile the project.
@@ -144,8 +153,11 @@ to repeatedly clean compile the project.
 Note that it may still be necessary to run tensorboard natively in order to test
 compatibility with other platforms (i.e. OSX)
 
+<<<<<<< HEAD
 =======
 >>>>>>> de7b78537 (add ibazel update development.md)
+=======
+>>>>>>> cd574540b (tweak Dockerfile RUN statement order, add a line to DEVELOPMENT.md describing when the image should be updated)
 ### Debugging Polymer UI Tests Locally
 
 Our UI tests (e.g., //tensorboard/components/vz_sorting/test) for our polymer code base
