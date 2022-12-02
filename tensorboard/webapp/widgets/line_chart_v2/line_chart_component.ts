@@ -28,10 +28,11 @@ import {
   TemplateRef,
   ViewChild,
 } from '@angular/core';
-import {Observable, ReplaySubject} from 'rxjs';
+import {BehaviorSubject, Observable, ReplaySubject} from 'rxjs';
 import {ChartImpl} from './lib/chart';
 import {Chart} from './lib/chart_types';
 import {
+  AxisEvent,
   ChartCallbacks,
   ChartOptions,
   DataSeries,
@@ -67,6 +68,7 @@ export interface TemplateContext {
   xScale: Scale;
   viewExtent: Extent;
   domDimension: {width: number; height: number};
+  mouseAxisPosition: Observable<AxisEvent | undefined>;
 }
 
 @Component({
@@ -143,6 +145,12 @@ export class LineChartComponent
   @Output()
   viewBoxChanged = new EventEmitter<Extent>();
 
+  @Output()
+  onMouseOverAxis = new EventEmitter<AxisEvent>();
+
+  @Output()
+  onMouseLeaveAxis = new EventEmitter<AxisEvent>();
+
   private onViewBoxOverridden = new ReplaySubject<boolean>(1);
 
   /**
@@ -163,6 +171,10 @@ export class LineChartComponent
 
   readonly Y_GRID_COUNT = 6;
   readonly X_GRID_COUNT = 10;
+
+  readonly mouseAxisPosition = new BehaviorSubject<AxisEvent | undefined>(
+    undefined
+  );
 
   xScale: Scale = createScale(this.xScaleType);
   yScale: Scale = createScale(this.xScaleType);
@@ -523,5 +535,15 @@ export class LineChartComponent
       [axis]: extent,
     };
     this.onViewBoxChanged({dataExtent: nextDataExtent});
+  }
+
+  mouseOverAxis(axisEvent: AxisEvent) {
+    this.mouseAxisPosition.next(axisEvent);
+    this.onMouseOverAxis.emit(axisEvent);
+  }
+
+  mouseLeaveAxis(axisEvent: AxisEvent) {
+    this.mouseAxisPosition.next(undefined);
+    this.onMouseLeaveAxis.emit(axisEvent);
   }
 }

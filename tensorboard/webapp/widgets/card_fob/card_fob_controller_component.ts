@@ -19,9 +19,13 @@ import {
   ElementRef,
   EventEmitter,
   Input,
+  OnDestroy,
+  OnInit,
   Output,
   ViewChild,
 } from '@angular/core';
+import {Observable, Subscription} from 'rxjs';
+import {AxisEvent} from '../line_chart_v2/lib/public_types';
 import {CardFobComponent} from './card_fob_component';
 import {
   AxisDirection,
@@ -48,7 +52,7 @@ const TIME_SELECTION_TO_FOB: Record<keyof TimeSelection, Fob> = {
   styleUrls: ['card_fob_controller_component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CardFobControllerComponent {
+export class CardFobControllerComponent implements OnInit, OnDestroy {
   @ViewChild('startFobWrapper') readonly startFobWrapper!: ElementRef;
   @ViewChild('endFobWrapper') readonly endFobWrapper!: ElementRef;
   @ViewChild('prospectiveFobWrapper')
@@ -65,6 +69,7 @@ export class CardFobControllerComponent {
   @Input() isProspectiveFobFeatureEnabled?: Boolean = false;
   @Input() prospectiveStep: number | null = null;
   @Input() prospectiveStepAxisPosition?: number | null = null;
+  @Input() mousePosition!: Observable<AxisEvent | undefined>;
 
   @Output() onTimeSelectionChanged =
     new EventEmitter<TimeSelectionWithAffordance>();
@@ -81,7 +86,25 @@ export class CardFobControllerComponent {
   private mouseListener: any = this.mouseMove.bind(this);
   private stopListener: any = this.stopDrag.bind(this);
 
+  private subscriptions: Subscription[] = [];
+
   constructor(private readonly root: ElementRef) {}
+
+  ngOnInit(): void {
+    this.subscriptions.push(
+      this.mousePosition.subscribe((axisEvent: AxisEvent | undefined) => {
+        if (!axisEvent) {
+          this.onProspectiveAreaMouseLeave();
+          return;
+        }
+        this.mouseOverProspectiveFobArea(axisEvent.event);
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach((subscription) => subscription.unsubscribe());
+  }
 
   readonly Fob = Fob;
   readonly TimeSelectionAffordance = TimeSelectionAffordance;

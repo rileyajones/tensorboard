@@ -33,3 +33,18 @@ export enum InteractionState {
   SCROLL_ZOOMING = 'SCROLL_ZOOMING',
   PANNING = 'PANNING',
 }
+
+export type AxisType = 'x' | 'y';
+
+export interface AxisEvent {
+  axis: AxisType;
+  event: MouseEvent;
+}
+
+export interface AxisPosition {
+  axis: AxisType;
+  position: {
+    x: number;
+    y: number;
+  };
+}

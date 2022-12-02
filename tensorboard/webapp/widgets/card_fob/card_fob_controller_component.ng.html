@@ -33,13 +33,6 @@ limitations under the License.
         [step]="prospectiveStep"
       ></card-fob>
     </div>
-    <div
-      class="prospective-fob-area"
-      [ngClass]="isVertical() ? 'vertical-prospective-area' : 'horizontal-prospective-area'"
-      (mousemove)="mouseOverProspectiveFobArea($event)"
-      (click)="prospectiveFobClicked($event)"
-      (mouseleave)="onProspectiveAreaMouseLeave()"
-    ></div>
   </ng-container>
   <div
     #startFobWrapper

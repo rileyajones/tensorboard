@@ -19,7 +19,13 @@ import {
   Input,
   Output,
 } from '@angular/core';
-import {Dimension, Formatter, Scale} from '../lib/public_types';
+import {
+  AxisEvent,
+  AxisType,
+  Dimension,
+  Formatter,
+  Scale,
+} from '../lib/public_types';
 import {LinearScale, TemporalScale} from '../lib/scale';
 import {
   getDomSizeInformedTickCount,
@@ -40,7 +46,7 @@ export class LineChartAxisComponent {
   axisExtent!: [number, number];
 
   @Input()
-  axis!: 'x' | 'y';
+  axis!: AxisType;
 
   @Input()
   scale!: Scale;
@@ -56,6 +62,12 @@ export class LineChartAxisComponent {
 
   @Output()
   onViewExtentChange = new EventEmitter<[number, number]>();
+
+  @Output()
+  onMouseMove = new EventEmitter<AxisEvent>();
+
+  @Output()
+  onMouseLeave = new EventEmitter<AxisEvent>();
 
   editMenuOpened = false;
 

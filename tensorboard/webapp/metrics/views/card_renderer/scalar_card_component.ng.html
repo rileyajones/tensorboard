@@ -227,6 +227,7 @@ limitations under the License.
   let-domDim="domDimension"
   let-xScale="xScale"
   let-interactionState="interactionState"
+  let-mouseAxisPosition="mouseAxisPosition"
 >
   <ng-container *ngIf="showFobController()">
     <scalar-card-fob-controller
@@ -238,6 +239,7 @@ limitations under the License.
       [axisSize]="domDim.width"
       [rangeSelectionEnabled]="rangeSelectionEnabled"
       [isProspectiveFobFeatureEnabled]="isProspectiveFobFeatureEnabled"
+      [mousePosition]="mouseAxisPosition"
       (onTimeSelectionChanged)="onTimeSelectionChanged.emit($event)"
       (onTimeSelectionToggled)="onFobRemoved()"
     ></scalar-card-fob-controller>

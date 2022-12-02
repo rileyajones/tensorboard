@@ -23,7 +23,10 @@ import {
   TimeSelection,
   TimeSelectionAffordance,
 } from '../../../widgets/card_fob/card_fob_types';
-import {Scale} from '../../../widgets/line_chart_v2/lib/public_types';
+import {
+  AxisPosition,
+  Scale,
+} from '../../../widgets/line_chart_v2/lib/public_types';
 import {MinMaxStep} from './scalar_card_types';
 
 @Component({
@@ -43,6 +46,7 @@ import {MinMaxStep} from './scalar_card_types';
       [isProspectiveFobFeatureEnabled]="isProspectiveFobFeatureEnabled"
       [cardFobHelper]="cardFobHelper"
       [showExtendedLine]="true"
+      [mousePosition]="mousePosition"
       (onPrespectiveStepChanged)="onPrespectiveStepChanged($event)"
       (onTimeSelectionChanged)="onTimeSelectionChanged.emit($event)"
       (onTimeSelectionToggled)="onTimeSelectionToggled.emit($event)"
@@ -60,6 +64,8 @@ export class ScalarCardFobController {
   @Input() rangeSelectionEnabled: boolean = false;
   @Input() isProspectiveFobFeatureEnabled: Boolean = false;
   @Input() disableInteraction: boolean = false;
+
+  @Input() mousePosition?: AxisPosition | undefined;
 
   @Output() onTimeSelectionChanged = new EventEmitter<{
     timeSelection: TimeSelection;

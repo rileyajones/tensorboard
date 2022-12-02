@@ -14,7 +14,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<div [class]="axis + '-axis axis'">
+<div
+  [class]="axis + '-axis axis'"
+  (mousemove)="onMouseMove.emit({axis: axis, event: $event})"
+  (mouseleave)="onMouseLeave.emit({axis: axis, event: $event})"
+>
   <div class="line"></div>
   <div class="minor">
     <svg class="ticks">
