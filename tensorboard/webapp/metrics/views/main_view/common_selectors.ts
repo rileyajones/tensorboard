@@ -71,6 +71,27 @@ const getRenderableCardIdsWithMetadata = createSelector(
   }
 );
 
+export const getNumEmptyScalarCards = createSelector(
+  getNonEmptyCardIdsWithMetadata,
+  getCurrentRouteRunSelection,
+  getTagsWithScalarData,
+  (cardList, runSelectionMap, tagsWithScalarData) => {
+    return cardList
+      .filter((card) => {
+        if (!isSingleRunPlugin(card.plugin)) {
+          return true;
+        }
+        return Boolean(runSelectionMap && runSelectionMap.get(card.runId!));
+      })
+      .reduce((sum, cardIdWithMetadata) => {
+        if (cardIdWithMetadata.plugin !== PluginType.SCALARS) {
+          return sum;
+        }
+        return tagsWithScalarData!.has(cardIdWithMetadata.tag) ? sum : sum + 1;
+      }, 0);
+  }
+);
+
 export const getSortedRenderableCardIdsWithMetadata = createSelector<
   State,
   DeepReadonly<CardIdWithMetadata>[],

@@ -37,6 +37,7 @@ tf_ng_module(
         "//tensorboard/webapp/feature_flag",
         "//tensorboard/webapp/metrics:types",
         "//tensorboard/webapp/metrics/actions",
+        "//tensorboard/webapp/metrics/views/main_view:common_selectors",
         "//tensorboard/webapp/widgets/card_fob:types",
         "//tensorboard/webapp/widgets/dropdown",
         "//tensorboard/webapp/widgets/range_input",

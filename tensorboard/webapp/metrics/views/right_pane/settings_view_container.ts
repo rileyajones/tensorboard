@@ -32,6 +32,7 @@ import {
   metricsChangeScalarSmoothing,
   metricsChangeTooltipSort,
   metricsChangeXAxisType,
+  metricsHideEmptyCardsChanged,
   metricsResetCardWidth,
   metricsResetImageBrightness,
   metricsResetImageContrast,
@@ -44,6 +45,7 @@ import {
   timeSelectionChanged,
 } from '../../actions';
 import {HistogramMode, TooltipSort, XAxisType} from '../../types';
+import {getNumEmptyScalarCards} from '../main_view/common_selectors';
 import {LinkedTimeSelectionChanged} from './types';
 
 const RANGE_INPUT_SOURCE_TO_AFFORDANCE: Record<
@@ -72,6 +74,9 @@ const RANGE_INPUT_SOURCE_TO_AFFORDANCE: Record<
       [histogramMode]="histogramMode$ | async"
       (histogramModeChanged)="onHistogramModeChanged($event)"
       [scalarSmoothing]="scalarSmoothing$ | async"
+      [numEmptyCards]="numEmptyCards$ | async"
+      [hideEmptyCards]="hideEmptyCards$ | async"
+      (hideEmptyCardsToggled)="onHideEmptyCardsToggled()"
       (scalarSmoothingChanged)="onScalarSmoothingChanged($event)"
       [scalarPartitionX]="scalarPartitionX$ | async"
       (scalarPartitionXToggled)="onScalarPartitionXToggled()"
@@ -175,6 +180,16 @@ export class SettingsViewContainer {
   readonly imageShowActualSize$ = this.store.select(
     selectors.getMetricsImageShowActualSize
   );
+
+  readonly numEmptyCards$ = this.store.select(getNumEmptyScalarCards);
+
+  readonly hideEmptyCards$ = this.store.select(
+    selectors.getMetricsHideEmptyCards
+  );
+
+  onHideEmptyCardsToggled() {
+    this.store.dispatch(metricsHideEmptyCardsChanged());
+  }
 
   onTooltipSortChanged(sort: TooltipSort) {
     this.store.dispatch(metricsChangeTooltipSort({sort}));
