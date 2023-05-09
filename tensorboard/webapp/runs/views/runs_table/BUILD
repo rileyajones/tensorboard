@@ -90,6 +90,7 @@ tf_ng_module(
         "//tensorboard/webapp/runs/store:selectors",
         "//tensorboard/webapp/runs/store:types",
         "//tensorboard/webapp/runs/store:utils",
+        "//tensorboard/webapp/metrics/views/main_view:common_selectors",
         "//tensorboard/webapp/settings",
         "//tensorboard/webapp/types",
         "//tensorboard/webapp/types:ui",

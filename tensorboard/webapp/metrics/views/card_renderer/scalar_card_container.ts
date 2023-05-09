@@ -94,6 +94,7 @@ import {
   RunToSeries,
 } from '../../store';
 import {CardId, CardMetadata, HeaderEditInfo, XAxisType} from '../../types';
+import {getFilteredRenderableRunsFromRoute} from '../main_view/common_selectors';
 import {CardRenderer} from '../metrics_view_types';
 import {getTagDisplayName} from '../utils';
 import {DataDownloadDialogContainer} from './data_download_dialog_container';
@@ -501,6 +502,7 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
         );
       }),
       combineLatestWith(
+        this.store.select(getFilteredRenderableRunsFromRoute),
         this.store.select(getCurrentRouteRunSelection),
         this.store.select(getRunColorMap),
         this.store.select(getMetricsScalarSmoothing)
@@ -510,55 +512,69 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
       // debounce by a microtask to emit only single change for the runs
       // store change.
       debounceTime(0),
-      map(([namedPartitionedSeries, runSelectionMap, colorMap, smoothing]) => {
-        const metadataMap: ScalarCardSeriesMetadataMap = {};
-        const shouldSmooth = smoothing > 0;
+      map(
+        ([
+          namedPartitionedSeries,
+          renderableRuns,
+          runSelectionMap,
+          colorMap,
+          smoothing,
+        ]) => {
+          const metadataMap: ScalarCardSeriesMetadataMap = {};
+          const shouldSmooth = smoothing > 0;
 
-        for (const partitioned of namedPartitionedSeries) {
-          const {
-            seriesId,
-            runId,
-            displayName,
-            alias,
-            partitionIndex,
-            partitionSize,
-          } = partitioned;
+          for (const partitioned of namedPartitionedSeries) {
+            const {
+              seriesId,
+              runId,
+              displayName,
+              alias,
+              partitionIndex,
+              partitionSize,
+            } = partitioned;
 
-          metadataMap[seriesId] = {
-            type: SeriesType.ORIGINAL,
-            id: seriesId,
-            alias,
-            displayName:
-              partitionSize > 1
-                ? `${displayName}: ${partitionIndex}`
-                : displayName,
-            visible: Boolean(runSelectionMap && runSelectionMap.get(runId)),
-            color: colorMap[runId] ?? '#fff',
-            aux: false,
-            opacity: 1,
-          };
-        }
+            metadataMap[seriesId] = {
+              type: SeriesType.ORIGINAL,
+              id: seriesId,
+              alias,
+              displayName:
+                partitionSize > 1
+                  ? `${displayName}: ${partitionIndex}`
+                  : displayName,
+              visible: Boolean(
+                renderableRuns.find(
+                  (runTableItem) => runTableItem.run.id === runId
+                ) &&
+                  runSelectionMap &&
+                  runSelectionMap.get(runId)
+              ),
+              color: colorMap[runId] ?? '#fff',
+              aux: false,
+              opacity: 1,
+            };
+          }
 
-        if (!shouldSmooth) {
+          if (!shouldSmooth) {
+            return metadataMap;
+          }
+
+          for (const [id, metadata] of Object.entries(metadataMap)) {
+            const smoothedSeriesId = getSmoothedSeriesId(id);
+            metadataMap[smoothedSeriesId] = {
+              ...metadata,
+              id: smoothedSeriesId,
+              type: SeriesType.DERIVED,
+              aux: false,
+              originalSeriesId: id,
+            };
+
+            metadata.aux = true;
+            metadata.opacity = 0.25;
+          }
+
           return metadataMap;
         }
-
-        for (const [id, metadata] of Object.entries(metadataMap)) {
-          const smoothedSeriesId = getSmoothedSeriesId(id);
-          metadataMap[smoothedSeriesId] = {
-            ...metadata,
-            id: smoothedSeriesId,
-            type: SeriesType.DERIVED,
-            aux: false,
-            originalSeriesId: id,
-          };
-
-          metadata.aux = true;
-          metadata.opacity = 0.25;
-        }
-
-        return metadataMap;
-      }),
+      ),
       startWith({} as ScalarCardSeriesMetadataMap)
     );
 

@@ -47,6 +47,10 @@ import {
   IntervalFilter,
 } from '../../../hparams/types';
 import {
+  getFilteredRenderableRuns,
+  getRenderableRuns,
+} from '../../../metrics/views/main_view/common_selectors';
+import {
   getActiveRoute,
   getCurrentRouteRunSelection,
   getExperiment,
@@ -160,30 +164,6 @@ function sortRunTableItems(
   return sortedItems;
 }
 
-function matchFilter(
-  filter: DiscreteFilter | IntervalFilter,
-  value: number | DiscreteHparamValue | undefined
-): boolean {
-  if (value === undefined) {
-    return filter.includeUndefined;
-  }
-  if (filter.type === DomainType.DISCRETE) {
-    // (upcast to work around bad TypeScript libdefs)
-    const values: Readonly<Array<typeof filter.filterValues[number]>> =
-      filter.filterValues;
-    return values.includes(value);
-  } else if (filter.type === DomainType.INTERVAL) {
-    // Auto-added to unblock TS5.0 migration
-    //  @ts-ignore(go/ts50upgrade): Operator '<=' cannot be applied to types
-    //  'number' and 'string | number | boolean'.
-    // Auto-added to unblock TS5.0 migration
-    //  @ts-ignore(go/ts50upgrade): Operator '<=' cannot be applied to types
-    //  'string | number | boolean' and 'number'.
-    return filter.filterLowerValue <= value && value <= filter.filterUpperValue;
-  }
-  return false;
-}
-
 /**
  * Renders list of experiments.
  *
@@ -286,17 +266,8 @@ export class RunsTableContainer implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    const getRunTableItemsPerExperiment = this.experimentIds.map((id) =>
-      this.getRunTableItemsForExperiment(id)
-    );
-
-    const rawAllUnsortedRunTableItems$ = combineLatest(
-      getRunTableItemsPerExperiment
-    ).pipe(
-      map((itemsForExperiments: RunTableItem[][]) => {
-        const items = [] as RunTableItem[];
-        return items.concat(...itemsForExperiments);
-      })
+    const rawAllUnsortedRunTableItems$ = this.store.select(
+      getRenderableRuns(this.experimentIds)
     );
     this.allUnsortedRunTableItems$ = rawAllUnsortedRunTableItems$.pipe(
       takeUntil(this.ngUnsubscribe),
@@ -306,9 +277,9 @@ export class RunsTableContainer implements OnInit, OnDestroy {
       map((items) => items.length)
     );
 
-    const getFilteredItems$ = this.getFilteredItems$(
-      this.allUnsortedRunTableItems$
-    ).pipe(takeUntil(this.ngUnsubscribe), shareReplay(1));
+    const getFilteredItems$ = this.store
+      .select(getFilteredRenderableRuns(this.experimentIds))
+      .pipe(takeUntil(this.ngUnsubscribe), shareReplay(1));
 
     this.filteredItemsLength$ = getFilteredItems$.pipe(
       map((items) => items.length)
@@ -424,72 +395,9 @@ export class RunsTableContainer implements OnInit, OnDestroy {
 
     this.store.dispatch(runTableShown({experimentIds: this.experimentIds}));
   }
-
   ngOnDestroy() {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
-  }
-
-  private getFilteredItems$(runItems$: Observable<RunTableItem[]>) {
-    return combineLatest([
-      runItems$,
-      this.store.select(getRunSelectorRegexFilter),
-    ]).pipe(
-      map(([items, regexString]) => {
-        if (!regexString) {
-          return items;
-        }
-
-        const shouldIncludeExperimentName = this.columns.includes(
-          RunsTableColumn.EXPERIMENT_NAME
-        );
-        return items.filter((item) => {
-          return matchRunToRegex(
-            {
-              runName: item.run.name,
-              experimentAlias: item.experimentAlias,
-            },
-            regexString,
-            shouldIncludeExperimentName
-          );
-        });
-      }),
-      switchMap((items) => {
-        if (!this.showHparamsAndMetrics) {
-          return of(items);
-        }
-
-        return combineLatest(
-          this.store.select(
-            hparamsSelectors.getHparamFilterMap,
-            this.experimentIds
-          ),
-          this.store.select(
-            hparamsSelectors.getMetricFilterMap,
-            this.experimentIds
-          )
-        ).pipe(
-          map(([hparamFilters, metricFilters]) => {
-            return items.filter(({hparams, metrics}) => {
-              const hparamMatches = [...hparamFilters.entries()].every(
-                ([hparamName, filter]) => {
-                  const value = hparams.get(hparamName);
-                  return matchFilter(filter, value);
-                }
-              );
-
-              return (
-                hparamMatches &&
-                [...metricFilters.entries()].every(([metricTag, filter]) => {
-                  const value = metrics.get(metricTag);
-                  return matchFilter(filter, value);
-                })
-              );
-            });
-          })
-        );
-      })
-    );
   }
 
   private sortedAndSlicedItems$(filteredItems$: Observable<RunTableItem[]>) {
@@ -517,40 +425,6 @@ export class RunsTableContainer implements OnInit, OnDestroy {
     );
 
     return slicedItems;
-  }
-
-  private getRunTableItemsForExperiment(
-    experimentId: string
-  ): Observable<RunTableItem[]> {
-    return combineLatest([
-      this.store.select(getRuns, {experimentId}),
-      this.store.select(getExperiment, {experimentId}),
-      this.store.select(getCurrentRouteRunSelection),
-      this.store.select(getRunColorMap),
-      this.store.select(getExperimentIdToExperimentAliasMap),
-    ]).pipe(
-      map(([runs, experiment, selectionMap, colorMap, experimentIdToAlias]) => {
-        return runs.map((run) => {
-          const hparamMap: RunTableItem['hparams'] = new Map();
-          (run.hparams || []).forEach((hparam) => {
-            hparamMap.set(hparam.name, hparam.value);
-          });
-          const metricMap: RunTableItem['metrics'] = new Map();
-          (run.metrics || []).forEach((metric) => {
-            metricMap.set(metric.tag, metric.value);
-          });
-          return {
-            run,
-            experimentName: experiment?.name || '',
-            experimentAlias: experimentIdToAlias[experimentId],
-            selected: Boolean(selectionMap && selectionMap.get(run.id)),
-            runColor: colorMap[run.id],
-            hparams: hparamMap,
-            metrics: metricMap,
-          };
-        });
-      })
-    );
   }
 
   onRunSelectionToggle(item: RunTableItem) {

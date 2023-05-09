@@ -298,6 +298,7 @@ tf_ng_module(
         ":vis_linked_time_selection_warning",
         "//tensorboard/webapp:app_state",
         "//tensorboard/webapp:selectors",
+        "//tensorboard/webapp/metrics/views/main_view:common_selectors",
         "//tensorboard/webapp/angular:expect_angular_cdk_overlay",
         "//tensorboard/webapp/angular:expect_angular_material_button",
         "//tensorboard/webapp/angular:expect_angular_material_dialog",
