@@ -225,7 +225,7 @@ function buildAlias(override: Partial<ExperimentAlias> = {}): ExperimentAlias {
   };
 }
 
-fdescribe('scalar card', () => {
+describe('scalar card', () => {
   let store: MockStore<State>;
   let selectSpy: jasmine.Spy;
   let overlayContainer: OverlayContainer;
@@ -2408,6 +2408,7 @@ fdescribe('scalar card', () => {
           end: null,
         });
         store.refreshState();
+        tick();
         fixture.detectChanges();
 
         testController.stopDrag();
@@ -2430,6 +2431,7 @@ fdescribe('scalar card', () => {
           end: null,
         });
         store.refreshState();
+        tick();
         fixture.detectChanges();
 
         testController.stopDrag();
@@ -3685,7 +3687,7 @@ fdescribe('scalar card', () => {
     }));
   });
 
-  fdescribe('step selector feature integration', () => {
+  describe('step selector feature integration', () => {
     describe('fob controls', () => {
       beforeEach(() => {
         const runToSeries = {
@@ -3765,6 +3767,7 @@ fdescribe('scalar card', () => {
           end: null,
         });
         store.refreshState();
+        tick();
         fixture.detectChanges();
 
         // One start fob
@@ -3787,6 +3790,7 @@ fdescribe('scalar card', () => {
         });
         store.overrideSelector(getMetricsCardRangeSelectionEnabled, true);
         store.refreshState();
+        tick();
         fixture.detectChanges();
 
         // One start fob, one end fob
@@ -3862,6 +3866,7 @@ fdescribe('scalar card', () => {
           end: null,
         });
         store.refreshState();
+        tick();
         fixture.detectChanges();
 
         testController.stopDrag();
@@ -3922,6 +3927,7 @@ fdescribe('scalar card', () => {
           end: null,
         });
         store.refreshState();
+        tick();
         fixture.detectChanges();
 
         testController.stopDrag();
