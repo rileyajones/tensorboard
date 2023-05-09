@@ -176,7 +176,7 @@ const utils = {
   },
 };
 
-export function getRenderableRuns(experimentIds: string[]) {
+function getRenderableRuns(experimentIds: string[]) {
   return createSelector(
     getRunsFromExperimentIds(experimentIds),
     getExperimentNames(experimentIds),
@@ -213,7 +213,7 @@ export function getRenderableRuns(experimentIds: string[]) {
   );
 }
 
-export function getFilteredRenderableRuns(experimentIds: string[]) {
+function getFilteredRenderableRuns(experimentIds: string[]) {
   return createSelector(
     getRunSelectorRegexFilter,
     getRenderableRuns(experimentIds),
@@ -250,6 +250,11 @@ export const getFilteredRenderableRunsIdsFromRoute = createSelector(
     return new Set(filteredRenderableRuns.map(({run: {id}}) => id));
   }
 );
+
+export const factories = {
+  getRenderableRuns,
+  getFilteredRenderableRuns,
+};
 
 export const TEST_ONLY = {
   getRenderableCardIdsWithMetadata,

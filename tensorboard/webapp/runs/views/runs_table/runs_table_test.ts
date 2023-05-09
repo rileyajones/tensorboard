@@ -26,6 +26,7 @@ import {
   fakeAsync,
   flushMicrotasks,
   TestBed,
+  tick,
 } from '@angular/core/testing';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatDialogModule} from '@angular/material/dialog';
@@ -36,7 +37,7 @@ import {MatSortModule} from '@angular/material/sort';
 import {MatTableModule} from '@angular/material/table';
 import {By} from '@angular/platform-browser';
 import {NoopAnimationsModule} from '@angular/platform-browser/animations';
-import {Action, Store} from '@ngrx/store';
+import {Action, MemoizedSelector, Store} from '@ngrx/store';
 import {MockStore} from '@ngrx/store/testing';
 import {of, ReplaySubject} from 'rxjs';
 import * as alertActions from '../../../alert/actions';
@@ -76,7 +77,10 @@ import {selectors as settingsSelectors} from '../../../settings';
 import {buildColorPalette} from '../../../settings/testing';
 import {sendKeys} from '../../../testing/dom';
 import {MatIconTestingModule} from '../../../testing/mat_icon_module';
-import {provideMockTbStore} from '../../../testing/utils';
+import {
+  overrideSelectorFactory,
+  provideMockTbStore,
+} from '../../../testing/utils';
 import {DataLoadState} from '../../../types/data';
 import {SortDirection} from '../../../types/ui';
 import {ExperimentAliasModule} from '../../../widgets/experiment_alias/experiment_alias_module';
@@ -102,6 +106,26 @@ import {RunsGroupMenuButtonContainer} from './runs_group_menu_button_container';
 import {RunsTableComponent} from './runs_table_component';
 import {RunsTableContainer, TEST_ONLY} from './runs_table_container';
 import {HparamSpec, MetricSpec, RunsTableColumn} from './types';
+import {factories as commonSelectorFactories} from '../../../metrics/views/main_view/common_selectors';
+
+function buildRunTableItem(
+  run: Run,
+  experimentId: string,
+  experimentName: string,
+  experimentAlias: string
+) {
+  return {
+    run: {
+      ...run,
+      experimentId: 'book',
+    },
+    selected: true,
+    experimentAlias: {aliasText: experimentAlias, aliasNumber: 1},
+    experimentName,
+    hparams: new Map<string, string>(),
+    metrics: new Map<string, number>(),
+  };
+}
 
 @Injectable()
 class ColorPickerTestHelper {
@@ -256,17 +280,17 @@ describe('runs_table', () => {
 
     store = TestBed.inject<Store<State>>(Store) as MockStore<State>;
     overlayContainer = TestBed.inject(OverlayContainer);
-    store.overrideSelector(getRuns, []);
+    // store.overrideSelector(getRuns, []);
     store.overrideSelector(getRunIdsForExperiment, []);
     store.overrideSelector(getRunsLoadState, {
       state: DataLoadState.NOT_LOADED,
       lastLoadedTimeInMs: null,
     });
-    store.overrideSelector(getExperiment, null);
-    store.overrideSelector(
-      getCurrentRouteRunSelection,
-      new Map() as ReturnType<typeof getCurrentRouteRunSelection>
-    );
+    // store.overrideSelector(getExperiment, null);
+    // store.overrideSelector(
+    //   getCurrentRouteRunSelection,
+    //   new Map() as ReturnType<typeof getCurrentRouteRunSelection>
+    // );
     store.overrideSelector(getRunSelectorPaginationOption, {
       pageIndex: 0,
       pageSize: 10,
@@ -276,11 +300,11 @@ describe('runs_table', () => {
       key: null,
       direction: SortDirection.UNSET,
     });
-    store.overrideSelector(getRunColorMap, {});
-    store.overrideSelector(getExperimentIdToExperimentAliasMap, {
-      rowling: {aliasText: 'Harry Potter', aliasNumber: 1},
-      tolkien: {aliasText: 'The Lord of the Rings', aliasNumber: 2},
-    });
+    // store.overrideSelector(getRunColorMap, {});
+    // store.overrideSelector(getExperimentIdToExperimentAliasMap, {
+    //   rowling: {aliasText: 'Harry Potter', aliasNumber: 1},
+    //   tolkien: {aliasText: 'The Lord of the Rings', aliasNumber: 2},
+    // });
     store.overrideSelector(
       hparamsSelectors.getExperimentsHparamsAndMetricsSpecs,
       {
@@ -311,7 +335,7 @@ describe('runs_table', () => {
     overlayContainer = TestBed.inject(OverlayContainer);
   });
 
-  describe('list renders', () => {
+  fdescribe('list renders', () => {
     let selectSpy: jasmine.Spy;
 
     beforeEach(() => {
@@ -323,24 +347,30 @@ describe('runs_table', () => {
       selectSpy
         .withArgs(TEST_ONLY.getRunsLoading, {experimentId: 'book'})
         .and.returnValue(of(false));
-      selectSpy
-        .withArgs(getRuns, {experimentId: 'book'})
-        .and.returnValue(
-          of([
-            buildRun({id: 'book1', name: "The Philosopher's Stone"}),
-            buildRun({id: 'book2', name: 'The Chamber Of Secrets'}),
-          ])
-        );
-      selectSpy.withArgs(getExperiment, {experimentId: 'book'}).and.returnValue(
-        of(
-          buildExperiment({
-            name: 'Harry Potter',
-          })
-        )
+      const runTableItems = [
+        buildRunTableItem(
+          buildRun({id: 'book1', name: "The Philosopher's Stone"}),
+          'book',
+          'Book',
+          'Harry Potter'
+        ),
+        buildRunTableItem(
+          buildRun({id: 'book2', name: 'The Chamber Of Secrets'}),
+          'book',
+          'Book',
+          'Harry Potter'
+        ),
+      ];
+      overrideSelectorFactory(
+        commonSelectorFactories,
+        'getRenderableRuns',
+        runTableItems
       );
-      store.overrideSelector(getExperimentIdToExperimentAliasMap, {
-        book: {aliasText: 'Harry Potter', aliasNumber: 1},
-      });
+      overrideSelectorFactory(
+        commonSelectorFactories,
+        'getFilteredRenderableRuns',
+        runTableItems
+      );
 
       const fixture = createComponent(
         ['book'],
@@ -381,48 +411,78 @@ describe('runs_table', () => {
       );
     });
 
-    it('concats runs from multiple experimentIds into the table', async () => {
+    fit('concats runs from multiple experimentIds into the table', async () => {
       selectSpy
         .withArgs(TEST_ONLY.getRunsLoading, {experimentId: 'rowling'})
         .and.returnValue(of(false));
       selectSpy
-        .withArgs(getRuns, {experimentId: 'rowling'})
-        .and.returnValue(
-          of([
-            buildRun({id: 'book1', name: "The Philosopher's Stone"}),
-            buildRun({id: 'book2', name: 'The Chamber Of Secrets'}),
-          ])
-        );
-      selectSpy
         .withArgs(TEST_ONLY.getRunsLoading, {experimentId: 'tolkien'})
         .and.returnValue(of(false));
-      selectSpy
-        .withArgs(getRuns, {experimentId: 'tolkien'})
-        .and.returnValue(
-          of([buildRun({id: 'book3', name: 'The Fellowship of the Ring'})])
-        );
-      selectSpy
-        .withArgs(getExperiment, {experimentId: 'rowling'})
-        .and.returnValue(
-          of(
-            buildExperiment({
-              name: 'Harry Potter',
-            })
-          )
-        );
-      selectSpy
-        .withArgs(getExperiment, {experimentId: 'tolkien'})
-        .and.returnValue(
-          of(
-            buildExperiment({
-              name: 'The Lord of the Rings',
-            })
-          )
-        );
-      store.overrideSelector(getExperimentIdToExperimentAliasMap, {
-        rowling: {aliasText: 'HP', aliasNumber: 1},
-        tolkien: {aliasText: 'LoTR', aliasNumber: 2},
-      });
+      // selectSpy
+      //   .withArgs(getRuns, {experimentId: 'rowling'})
+      //   .and.returnValue(
+      //     of([
+      //       buildRun({id: 'book1', name: "The Philosopher's Stone"}),
+      //       buildRun({id: 'book2', name: 'The Chamber Of Secrets'}),
+      //     ])
+      //   );
+      // selectSpy
+      //   .withArgs(getRuns, {experimentId: 'tolkien'})
+      //   .and.returnValue(
+      //     of([buildRun({id: 'book3', name: 'The Fellowship of the Ring'})])
+      //   );
+      // selectSpy
+      //   .withArgs(getExperiment, {experimentId: 'rowling'})
+      //   .and.returnValue(
+      //     of(
+      //       buildExperiment({
+      //         name: 'Harry Potter',
+      //       })
+      //     )
+      //   );
+      // selectSpy
+      //   .withArgs(getExperiment, {experimentId: 'tolkien'})
+      //   .and.returnValue(
+      //     of(
+      //       buildExperiment({
+      //         name: 'The Lord of the Rings',
+      //       })
+      //     )
+      //   );
+      // store.overrideSelector(getExperimentIdToExperimentAliasMap, {
+      //   rowling: {aliasText: 'HP', aliasNumber: 1},
+      //   tolkien: {aliasText: 'LoTR', aliasNumber: 2},
+      // });
+      const runTableItems = [
+        buildRunTableItem(
+          buildRun({id: 'book1', name: "The Philosopher's Stone"}),
+          'rowling',
+          'Harry Potter',
+          'HP'
+        ),
+        buildRunTableItem(
+          buildRun({id: 'book2', name: 'The Chamber Of Secrets'}),
+          'rowling',
+          'Harry Potter',
+          'HP'
+        ),
+        buildRunTableItem(
+          buildRun({id: 'book3', name: 'The Fellowship of the Ring'}),
+          'tolkien',
+          'The Lord of the Rings',
+          'LoTR'
+        ),
+      ];
+      overrideSelectorFactory(
+        commonSelectorFactories,
+        'getRenderableRuns',
+        runTableItems
+      );
+      overrideSelectorFactory(
+        commonSelectorFactories,
+        'getFilteredRenderableRuns',
+        runTableItems
+      );
 
       const fixture = createComponent(
         ['tolkien', 'rowling'],

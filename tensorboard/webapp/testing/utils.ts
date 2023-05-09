@@ -93,3 +93,11 @@ export function provideMockTbStore() {
     initialState: buildMockState(),
   });
 }
+
+export function overrideSelectorFactory<T extends Record<string, any>>(
+  factories: T,
+  factoryName: keyof T,
+  value: any
+) {
+  spyOn(factories, factoryName as any).and.returnValue((() => value) as any);
+}

@@ -39,24 +39,10 @@ import {
   actions as hparamsActions,
   selectors as hparamsSelectors,
 } from '../../../hparams';
-import {
-  DiscreteFilter,
-  DiscreteHparamValue,
-  DiscreteHparamValues,
-  DomainType,
-  IntervalFilter,
-} from '../../../hparams/types';
-import {
-  getFilteredRenderableRuns,
-  getRenderableRuns,
-} from '../../../metrics/views/main_view/common_selectors';
+import {DiscreteHparamValues} from '../../../hparams/types';
+import {factories as commonSelectorFactories} from '../../../metrics/views/main_view/common_selectors';
 import {
   getActiveRoute,
-  getCurrentRouteRunSelection,
-  getExperiment,
-  getExperimentIdToExperimentAliasMap,
-  getRunColorMap,
-  getRuns,
   getRunSelectorPaginationOption,
   getRunSelectorRegexFilter,
   getRunSelectorSort,
@@ -64,7 +50,6 @@ import {
 } from '../../../selectors';
 import {DataLoadState, LoadState} from '../../../types/data';
 import {SortDirection} from '../../../types/ui';
-import {matchRunToRegex} from '../../../util/matcher';
 import {
   runColorChanged,
   runPageSelectionToggled,
@@ -267,7 +252,7 @@ export class RunsTableContainer implements OnInit, OnDestroy {
 
   ngOnInit() {
     const rawAllUnsortedRunTableItems$ = this.store.select(
-      getRenderableRuns(this.experimentIds)
+      commonSelectorFactories.getRenderableRuns(this.experimentIds)
     );
     this.allUnsortedRunTableItems$ = rawAllUnsortedRunTableItems$.pipe(
       takeUntil(this.ngUnsubscribe),
@@ -278,7 +263,9 @@ export class RunsTableContainer implements OnInit, OnDestroy {
     );
 
     const getFilteredItems$ = this.store
-      .select(getFilteredRenderableRuns(this.experimentIds))
+      .select(
+        commonSelectorFactories.getFilteredRenderableRuns(this.experimentIds)
+      )
       .pipe(takeUntil(this.ngUnsubscribe), shareReplay(1));
 
     this.filteredItemsLength$ = getFilteredItems$.pipe(
