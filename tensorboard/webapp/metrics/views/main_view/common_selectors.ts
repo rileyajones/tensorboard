@@ -244,6 +244,13 @@ export const getFilteredRenderableRunsFromRoute = createSelector(
   }
 );
 
+export const getFilteredRenderableRunsIdsFromRoute = createSelector(
+  getFilteredRenderableRunsFromRoute,
+  (filteredRenderableRuns) => {
+    return new Set(filteredRenderableRuns.map(({run: {id}}) => id));
+  }
+);
+
 export const TEST_ONLY = {
   getRenderableCardIdsWithMetadata,
   getScalarTagsForRunSelection,

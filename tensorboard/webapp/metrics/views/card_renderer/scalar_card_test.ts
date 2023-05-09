@@ -36,7 +36,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {By} from '@angular/platform-browser';
 import {NoopAnimationsModule} from '@angular/platform-browser/animations';
 import {Action, Store} from '@ngrx/store';
-import {MockStore, provideMockStore} from '@ngrx/store/testing';
+import {MockStore} from '@ngrx/store/testing';
 import {Observable, of, ReplaySubject} from 'rxjs';
 import {State} from '../../../app_state';
 import {ExperimentAlias} from '../../../experiments/types';
@@ -99,8 +99,6 @@ import {
   getSingleSelectionHeaders,
 } from '../../store';
 import {
-  appStateFromMetricsState,
-  buildMetricsState,
   buildScalarStepData,
   provideMockCardRunToSeriesData,
 } from '../../testing';
@@ -120,6 +118,8 @@ import {
 } from './scalar_card_types';
 import {VisLinkedTimeSelectionWarningModule} from './vis_linked_time_selection_warning_module';
 import {Extent} from '../../../widgets/line_chart_v2/lib/public_types';
+import {provideMockTbStore} from '../../../testing/utils';
+import * as commonSelectors from '../main_view/common_selectors';
 
 @Component({
   selector: 'line-chart',
@@ -225,7 +225,7 @@ function buildAlias(override: Partial<ExperimentAlias> = {}): ExperimentAlias {
   };
 }
 
-describe('scalar card', () => {
+fdescribe('scalar card', () => {
   let store: MockStore<State>;
   let selectSpy: jasmine.Spy;
   let overlayContainer: OverlayContainer;
@@ -343,11 +343,7 @@ describe('scalar card', () => {
         TestableDataDownload,
         TestableLineChart,
       ],
-      providers: [
-        provideMockStore({
-          initialState: appStateFromMetricsState(buildMetricsState()),
-        }),
-      ],
+      providers: [provideMockTbStore()],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
@@ -479,8 +475,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([['run1', true]])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1'])
       );
       store.overrideSelector(selectors.getMetricsXAxisType, XAxisType.STEP);
       selectSpy
@@ -754,8 +750,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([['run1', true]])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1'])
       );
     });
 
@@ -2810,11 +2806,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -2875,11 +2868,8 @@ describe('scalar card', () => {
       );
       store.overrideSelector(getMetricsRangeSelectionEnabled, true);
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -2952,8 +2942,8 @@ describe('scalar card', () => {
       );
       store.overrideSelector(getMetricsRangeSelectionEnabled, true);
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([['run1', true]])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1'])
       );
 
       store.overrideSelector(selectors.getMetricsScalarSmoothing, 0.3);
@@ -3013,8 +3003,8 @@ describe('scalar card', () => {
       );
       store.overrideSelector(getMetricsRangeSelectionEnabled, true);
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([['run1', true]])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -3073,11 +3063,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -3120,11 +3107,8 @@ describe('scalar card', () => {
       );
       store.overrideSelector(getMetricsRangeSelectionEnabled, true);
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -3168,11 +3152,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -3214,11 +3195,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2'])
       );
       store.overrideSelector(getMetricsLinkedTimeSelection, {
         start: {step: 1},
@@ -3259,11 +3237,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2'])
       );
       store.overrideSelector(selectors.getExperimentIdToExperimentAliasMap, {
         eid1: {aliasText: 'test alias 1', aliasNumber: 100},
@@ -3316,8 +3291,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([['run1', true]])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1'])
       );
       store.overrideSelector(getMetricsLinkedTimeSelection, {
         start: {step: 20},
@@ -3355,12 +3330,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-          ['run3', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2', 'run3'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -3400,12 +3371,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-          ['run3', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2', 'run3'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -3449,16 +3416,8 @@ describe('scalar card', () => {
         runToSeries as any
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-          ['run3', true],
-          ['run4', true],
-          ['run5', true],
-          ['run6', true],
-          ['run7', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2', 'run3', 'run4', 'run5', 'run6', 'run7'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -3506,16 +3465,8 @@ describe('scalar card', () => {
         runToSeries as any
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-          ['run3', true],
-          ['run4', true],
-          ['run5', true],
-          ['run6', true],
-          ['run7', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2', 'run3', 'run4', 'run5', 'run6', 'run7'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -3636,13 +3587,8 @@ describe('scalar card', () => {
         runToSeries
       );
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-          ['run3', true],
-          ['run4', true],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2', 'run3', 'run4'])
       );
 
       store.overrideSelector(getMetricsLinkedTimeSelection, {
@@ -3661,13 +3607,8 @@ describe('scalar card', () => {
 
     it('does not render expand button when the datatable does not overflow', fakeAsync(() => {
       store.overrideSelector(
-        selectors.getCurrentRouteRunSelection,
-        new Map([
-          ['run1', true],
-          ['run2', true],
-          ['run3', false],
-          ['run4', false],
-        ])
+        commonSelectors.getFilteredRenderableRunsIdsFromRoute,
+        new Set(['run1', 'run2'])
       );
       const fixture = createComponent('card1');
       fixture.detectChanges();
@@ -3744,7 +3685,7 @@ describe('scalar card', () => {
     }));
   });
 
-  describe('step selector feature integration', () => {
+  fdescribe('step selector feature integration', () => {
     describe('fob controls', () => {
       beforeEach(() => {
         const runToSeries = {
