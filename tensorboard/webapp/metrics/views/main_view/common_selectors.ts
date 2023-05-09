@@ -49,67 +49,6 @@ import {CardIdWithMetadata} from '../metrics_view_types';
 import {RouteKind} from '../../../app_routing/types';
 import {memoize} from '../../../util/memoize';
 
-export const getScalarTagsForRunSelection = createSelector(
-  getMetricsTagMetadata,
-  getCurrentRouteRunSelection,
-  (
-    tagMetadata: DeepReadonly<TagMetadata>,
-    runSelection: Map<string, boolean> | null
-  ) => {
-    return new Set(
-      Object.entries(tagMetadata.scalars.tagToRuns)
-        // If there are runs selected, filter to a list of tags with at least one selected run
-        .filter(([, runs]) => {
-          if (!runSelection || !runSelection.size) {
-            return true;
-          }
-          return runs.some((run) => runSelection?.get(run));
-        })
-        .map(([tag]) => tag)
-    );
-  }
-);
-
-const getRenderableCardIdsWithMetadata = createSelector(
-  getNonEmptyCardIdsWithMetadata,
-  getCurrentRouteRunSelection,
-  getMetricsHideEmptyCards,
-  getScalarTagsForRunSelection,
-  (
-    cardList,
-    runSelectionMap,
-    hideEmptyScalarCards,
-    scalarTagsForRunSelection
-  ) => {
-    const areAnyRunsSelected = Array.from(runSelectionMap?.values() || []).some(
-      Boolean
-    );
-    return cardList.filter((card) => {
-      if (!isSingleRunPlugin(card.plugin)) {
-        if (
-          hideEmptyScalarCards &&
-          areAnyRunsSelected &&
-          card.plugin === PluginType.SCALARS
-        ) {
-          return scalarTagsForRunSelection.has(card.tag);
-        }
-        return true;
-      }
-      return Boolean(runSelectionMap && runSelectionMap.get(card.runId!));
-    });
-  }
-);
-
-export const getSortedRenderableCardIdsWithMetadata = createSelector<
-  State,
-  DeepReadonly<CardIdWithMetadata>[],
-  DeepReadonly<CardIdWithMetadata>[]
->(getRenderableCardIdsWithMetadata, (cardList) => {
-  return cardList.sort((cardA, cardB) => {
-    return compareTagNames(cardA.tag, cardB.tag);
-  });
-});
-
 const utils = {
   filterRunItemsByRegex(
     runItems: RunTableItem[],
@@ -239,6 +178,11 @@ const getFilteredRenderableRuns = memoize((experimentIds: string[]) => {
   );
 });
 
+export const factories = {
+  getRenderableRuns,
+  getFilteredRenderableRuns,
+};
+
 export const getFilteredRenderableRunsFromRoute = createSelector(
   (state) => state,
   getExperimentIdsFromRoute,
@@ -254,10 +198,67 @@ export const getFilteredRenderableRunsIdsFromRoute = createSelector(
   }
 );
 
-export const factories = {
-  getRenderableRuns,
-  getFilteredRenderableRuns,
-};
+export const getScalarTagsForRunSelection = createSelector(
+  getMetricsTagMetadata,
+  getFilteredRenderableRunsFromRoute,
+  (tagMetadata, filteredRenderableRuns) => {
+    const renderableRunIds = new Set(
+      filteredRenderableRuns.map(({run: {id}}) => id)
+    );
+    return new Set(
+      Object.entries(tagMetadata.scalars.tagToRuns)
+        // If there are runs selected, filter to a list of tags with at least one selected run
+        .filter(([, runs]) => {
+          if (!renderableRunIds.size) {
+            return true;
+          }
+          return runs.some((run) => renderableRunIds.has(run));
+        })
+        .map(([tag]) => tag)
+    );
+  }
+);
+
+const getRenderableCardIdsWithMetadata = createSelector(
+  getNonEmptyCardIdsWithMetadata,
+  getCurrentRouteRunSelection,
+  getMetricsHideEmptyCards,
+  getScalarTagsForRunSelection,
+  (
+    cardList,
+    runSelectionMap,
+    hideEmptyScalarCards,
+    scalarTagsForRunSelection
+  ) => {
+    const areAnyRunsSelected = Array.from(runSelectionMap?.values() || []).some(
+      Boolean
+    );
+
+    return cardList.filter((card) => {
+      if (!isSingleRunPlugin(card.plugin)) {
+        if (
+          hideEmptyScalarCards &&
+          areAnyRunsSelected &&
+          card.plugin === PluginType.SCALARS
+        ) {
+          return scalarTagsForRunSelection.has(card.tag);
+        }
+        return true;
+      }
+      return Boolean(runSelectionMap && runSelectionMap.get(card.runId!));
+    });
+  }
+);
+
+export const getSortedRenderableCardIdsWithMetadata = createSelector<
+  State,
+  DeepReadonly<CardIdWithMetadata>[],
+  DeepReadonly<CardIdWithMetadata>[]
+>(getRenderableCardIdsWithMetadata, (cardList) => {
+  return cardList.sort((cardA, cardB) => {
+    return compareTagNames(cardA.tag, cardB.tag);
+  });
+});
 
 export const TEST_ONLY = {
   getRenderableCardIdsWithMetadata,
