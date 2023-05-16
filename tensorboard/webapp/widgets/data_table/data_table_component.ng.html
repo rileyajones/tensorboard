@@ -55,7 +55,12 @@ limitations under the License.
             <span [style.backgroundColor]="runData['color']"></span>
           </td>
           <ng-container *ngFor="let header of headers;">
-            <td *ngIf="showColumn(header)" [ngSwitch]="header.type">
+            <tb-data-table-cell
+              [smoothingEnabled]="smoothingEnabled"
+              [header]="header"
+              [datum]="runData[header.name]"
+            ></tb-data-table-cell>
+            <!-- <td *ngIf="showColumn(header)" [ngSwitch]="header.type">
               <div *ngSwitchCase="ColumnHeaders.VALUE_CHANGE" class="cell">
                 <ng-container
                   *ngTemplateOutlet="arrow; context: {$implicit:runData[header.name]}"
@@ -74,7 +79,7 @@ limitations under the License.
                 {{ getFormattedDataForColumn(header.type, runData[header.name])
                 }}
               </div>
-            </td>
+            </td> -->
           </ng-container>
         </tr>
       </ng-container>

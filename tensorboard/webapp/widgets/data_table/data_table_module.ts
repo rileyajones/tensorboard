@@ -18,9 +18,10 @@ import {NgModule} from '@angular/core';
 import {MatIconModule} from '@angular/material/icon';
 import {DataTableComponent} from './data_table_component';
 import {DataTableHeaderModule} from './data_table_header_module';
+import {DataTableCell} from './data_table_cell';
 
 @NgModule({
-  declarations: [DataTableComponent],
+  declarations: [DataTableComponent, DataTableCell],
   exports: [DataTableComponent],
   imports: [CommonModule, MatIconModule, DataTableHeaderModule],
 })

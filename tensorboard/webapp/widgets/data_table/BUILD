@@ -27,6 +27,7 @@ tf_ng_module(
     srcs = [
         "data_table_component.ts",
         "data_table_module.ts",
+        "data_table_cell.ts",
     ],
     assets = [
         "data_table_component.ng.html",
