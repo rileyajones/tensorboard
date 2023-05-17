@@ -138,7 +138,7 @@ function buildTimeSeriesLoadable<
  * Clients should operate on `CardId`s, whose type may be open to change.
  */
 
-export function getCardId(cardMetadata: CardMetadata) {
+export function getCardId(cardMetadata: Omit<CardMetadata, 'experimentIds'>) {
   return JSON.stringify(cardMetadata);
 }
 

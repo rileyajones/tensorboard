@@ -33,10 +33,12 @@ import {
   isSingleRunPlugin,
   MetricsDataSource,
   MultiRunTimeSeriesRequest,
+  NonSampledTagMetadata,
   PluginType,
   RunSampledInfo,
   RunToSeries,
   RunToTags,
+  SampledTagMetadata,
   SingleRunTimeSeriesRequest,
   TagMetadata,
   TagToRunSampledInfo,
@@ -63,7 +65,7 @@ function buildFrontendTimeSeriesResponse(
   experimentId: string
 ): TimeSeriesResponse {
   const {runToSeries, run, ...responseRest} = backendResponse;
-  const response = {...responseRest} as TimeSeriesResponse;
+  const response = {...responseRest, experimentId} as TimeSeriesResponse;
   if (runToSeries) {
     response.runToSeries = buildRunIdKeyedObject<RunToSeries>(
       runToSeries,
@@ -90,11 +92,42 @@ function buildRunIdKeyedObject<T extends {}>(
   return frontendObject as T;
 }
 
+function getTagsFromMetadata(
+  pluginType: PluginType,
+  metadata: SampledTagMetadata | NonSampledTagMetadata
+): string[] {
+  if (isSampledPlugin(pluginType)) {
+    return Object.keys((metadata as SampledTagMetadata).tagRunSampledInfo);
+  }
+
+  return Array.from(
+    new Set(
+      Object.values((metadata as NonSampledTagMetadata).runTagInfo).flat()
+    )
+  );
+}
+
+function getAllTags(backendTagMetadata: BackendTagMetadata): string[] {
+  const allTags = Object.keys(backendTagMetadata).reduce((tags, pluginType) => {
+    const pluginTags = getTagsFromMetadata(
+      pluginType as PluginType,
+      backendTagMetadata[pluginType as PluginType]
+    );
+    pluginTags.forEach((tag) => (tags[tag] = true));
+    return tags;
+  }, {} as Record<string, boolean>);
+
+  return Object.keys(allTags);
+}
+
 function buildFrontendTagMetadata(
   backendTagMetadata: BackendTagMetadata,
   experimentId: string
 ): TagMetadata {
-  const tagMetadata = {} as TagMetadata;
+  const allTags = getAllTags(backendTagMetadata);
+  const tagMetadata = {
+    experimentIdToTags: {[experimentId]: allTags},
+  } as TagMetadata;
   for (const pluginType of Object.keys(backendTagMetadata)) {
     const plugin = pluginType as PluginType;
     if (isSampledPlugin(plugin)) {
@@ -126,8 +159,15 @@ function buildFrontendTagMetadata(
 
 function buildCombinedTagMetadata(results: TagMetadata[]): TagMetadata {
   // Collate results from different experiments.
-  const tagMetadata = {} as TagMetadata;
+  const tagMetadata = {experimentIdToTags: {}} as TagMetadata;
   for (const experimentTagMetadata of results) {
+    // Merge the experimentIdToTags maps
+    Object.entries(experimentTagMetadata.experimentIdToTags).forEach(
+      ([key, value]) => {
+        tagMetadata.experimentIdToTags[key] = value;
+      }
+    );
+
     for (const plugin of Object.values(PluginType)) {
       if (isSampledPlugin(plugin)) {
         tagMetadata[plugin] = tagMetadata[plugin] || {

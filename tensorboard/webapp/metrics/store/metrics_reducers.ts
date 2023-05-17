@@ -28,6 +28,7 @@ import * as actions from '../actions';
 import {
   isFailedTimeSeriesResponse,
   isSampledPlugin,
+  isNonSampledPlugin,
   isSingleRunPlugin,
   isSingleRunTimeSeriesRequest,
   NonSampledPluginType,
@@ -82,6 +83,15 @@ import {
   TimeSeriesLoadable,
 } from './metrics_types';
 
+function getExperimentsIdsWithTag(
+  experimentIdToTags: Record<string, string[]>,
+  tag: string
+) {
+  return Object.keys(experimentIdToTags).filter((experimentId) => {
+    return experimentIdToTags[experimentId].includes(tag);
+  });
+}
+
 function buildCardMetadataList(tagMetadata: TagMetadata): CardMetadata[] {
   const results: CardMetadata[] = [];
   for (let pluginKey of Object.keys(tagMetadata)) {
@@ -102,6 +112,10 @@ function buildCardMetadataList(tagMetadata: TagMetadata): CardMetadata[] {
                 runId,
                 sample: i,
                 numSample: maxSamplesPerStep,
+                experimentIds: getExperimentsIdsWithTag(
+                  tagMetadata.experimentIdToTags,
+                  tag
+                ),
               });
             }
           }
@@ -111,20 +125,36 @@ function buildCardMetadataList(tagMetadata: TagMetadata): CardMetadata[] {
           'Multi-run, sampled plugin support not yet implemented'
         );
       }
-    } else {
+    } else if (isNonSampledPlugin(plugin)) {
       if (isSingleRunPlugin(plugin)) {
         // Single-run, unsampled format (e.g. Histograms).
         tagToRuns = tagMetadata[plugin].tagToRuns;
         for (const tag of Object.keys(tagToRuns)) {
           for (const runId of tagToRuns[tag]) {
-            results.push({plugin, tag, runId});
+            results.push({
+              plugin,
+              tag,
+              runId,
+              experimentIds: getExperimentsIdsWithTag(
+                tagMetadata.experimentIdToTags,
+                tag
+              ),
+            });
           }
         }
       } else {
         // Multi-run, unsampled format (e.g. Scalars).
         tagToRuns = tagMetadata[plugin].tagToRuns;
         for (const tag of Object.keys(tagToRuns)) {
-          results.push({plugin, tag, runId: null});
+          results.push({
+            plugin,
+            tag,
+            runId: null,
+            experimentIds: getExperimentsIdsWithTag(
+              tagMetadata.experimentIdToTags,
+              tag
+            ),
+          });
         }
       }
     }
@@ -251,6 +281,7 @@ const {initialState, reducers: namespaceContextedReducer} =
           tagDescriptions: {},
           tagRunSampledInfo: {},
         },
+        experimentIdToTags: {},
       },
 
       // Cards.
@@ -380,6 +411,7 @@ const {initialState, reducers: namespaceContextedReducer} =
           enabled: false,
         },
       ],
+      selectedDynamicColumnHeaders: [],
       filteredPluginTypes: new Set(),
       stepMinMax: {
         min: Infinity,
@@ -427,6 +459,7 @@ const {initialState, reducers: namespaceContextedReducer} =
               tagDescriptions: {},
               tagRunSampledInfo: {},
             },
+            experimentIdToTags: {},
           },
           cardList: [],
           cardMetadataMap: {},
@@ -631,6 +664,7 @@ const reducer = createReducer(
         scalars: buildPluginTagData(tagMetadata, PluginType.SCALARS),
         histograms: buildPluginTagData(tagMetadata, PluginType.HISTOGRAMS),
         images: tagMetadata[PluginType.IMAGES],
+        experimentIdToTags: tagMetadata.experimentIdToTags,
       };
 
       const newCardMetadataMap = {} as CardMetadataMap;
@@ -639,7 +673,8 @@ const reducer = createReducer(
 
       // Create new cards for unseen metadata.
       for (const cardMetadata of nextCardMetadataList) {
-        const cardId = getCardId(cardMetadata);
+        const {experimentIds, ...idAbleMetadata} = cardMetadata;
+        const cardId = getCardId(idAbleMetadata);
         newCardMetadataMap[cardId] = cardMetadata;
         nextCardList.push(cardId);
       }
@@ -992,7 +1027,11 @@ const reducer = createReducer(
       }
 
       if (response.runToSeries && response.plugin === PluginType.SCALARS) {
-        const cardId = getCardId({plugin, tag, runId: null});
+        const cardId = getCardId({
+          plugin,
+          tag,
+          runId: null,
+        });
         const nextMinMax = generateScalarCardMinMaxStep(
           loadable.runToSeries as RunToSeries<PluginType.SCALARS>
         );

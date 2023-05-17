@@ -48,6 +48,6 @@ export class CardGroupsContainer {
           return filteredPlugins.has(card.plugin);
         });
       }),
-      map((cardList) => groupCardIdWithMetdata(cardList))
+      map((cardList) => groupCardIdWithMetdata(cardList as any))
     );
 }

@@ -25,11 +25,14 @@ import {
   getRunSelectorRegexFilter,
   getRouteKind,
   getRunsFromExperimentIds,
+  getStaticColumnHeaders,
+  getCardMetadata,
 } from '../../../selectors';
 import {DeepReadonly} from '../../../util/types';
 import {
   getHparamFilterMapFromExperimentIds,
   getMetricFilterMapFromExperimentIds,
+  getExperimentsHparamsAndMetricsSpecs,
 } from '../../../hparams/_redux/hparams_selectors';
 import {
   DiscreteFilter,
@@ -48,6 +51,10 @@ import {compareTagNames} from '../../utils';
 import {CardIdWithMetadata} from '../metrics_view_types';
 import {RouteKind} from '../../../app_routing/types';
 import {memoize} from '../../../util/memoize';
+import {
+  ColumnHeader,
+  ColumnHeaderType,
+} from '../card_renderer/scalar_card_types';
 
 export const getScalarTagsForRunSelection = createSelector(
   getMetricsTagMetadata,
@@ -253,6 +260,42 @@ export const getFilteredRenderableRunsIdsFromRoute = createSelector(
     return new Set(filteredRenderableRuns.map(({run: {id}}) => id));
   }
 );
+
+const getPotentialHparamColumns = memoize((experimentIds: string[]) => {
+  return createSelector(
+    (state: State) => state,
+    (state): ColumnHeader[] => {
+      const {hparams} = getExperimentsHparamsAndMetricsSpecs(state, {
+        experimentIds,
+      });
+
+      return hparams.map((spec) => ({
+        // DO_NOT_SUBMIT this is wrong
+        type: ColumnHeaderType.VALUE,
+        name: spec.name,
+        displayName: spec.displayName,
+        enabled: false,
+      }));
+    }
+  );
+});
+
+export const getAllPotentialColumnsForCard = memoize((cardId: string) => {
+  return createSelector(
+    (state: State) => state,
+    getStaticColumnHeaders(cardId),
+    (state, staticColumnHeaders) => {
+      const cardMetadata = getCardMetadata(state, cardId);
+      if (!cardMetadata) {
+        return [];
+      }
+      const potentialHparamColumns = getPotentialHparamColumns(
+        cardMetadata.experimentIds
+      )(state);
+      return [...staticColumnHeaders, ...potentialHparamColumns];
+    }
+  );
+});
 
 export const factories = {
   getRenderableRuns,

@@ -61,11 +61,18 @@ export type SampledPluginType = PluginType.IMAGES;
 const sampledPluginTypes = [PluginType.IMAGES];
 
 export type NonSampledPluginType = Exclude<PluginType, SampledPluginType>;
+const nonSampledPluginTypes = [PluginType.SCALARS, PluginType.HISTOGRAMS];
 
 export function isSampledPlugin(
   plugin: PluginType
 ): plugin is SampledPluginType {
   return sampledPluginTypes.includes(plugin);
+}
+
+export function isNonSampledPlugin(
+  plugin: PluginType
+): plugin is NonSampledPluginType {
+  return nonSampledPluginTypes.includes(plugin);
 }
 
 export type SingleRunPluginType = PluginType.HISTOGRAMS | PluginType.IMAGES;
@@ -83,6 +90,7 @@ export type TagMetadata = {
   [PluginType.SCALARS]: NonSampledTagMetadata;
   [PluginType.HISTOGRAMS]: NonSampledTagMetadata;
   [PluginType.IMAGES]: SampledTagMetadata;
+  experimentIdToTags: Record<string, string[]>;
 };
 
 export interface SingleRunTimeSeriesRequest {
@@ -123,6 +131,7 @@ export interface TimeSeriesSuccessfulResponse {
   sample?: number;
   runToSeries: RunToSeries;
   error?: undefined;
+  experimentId: string;
 }
 
 export interface TimeSeriesFailedResponse {

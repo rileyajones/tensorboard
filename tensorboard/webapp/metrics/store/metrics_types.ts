@@ -60,6 +60,8 @@ export type TagMetadata = {
   [NSPT in NonSampledPluginType]: NonSampledPluginTagMetadata;
 } & {
   [SPT in SampledPluginType]: SampledPluginTagMetadata;
+} & {
+  experimentIdToTags: Record<string, string[]>;
 };
 
 export interface StepDatum {
@@ -200,6 +202,7 @@ export interface MetricsNamespacedState {
   rangeSelectionEnabled: boolean;
   singleSelectionHeaders: ColumnHeader[];
   rangeSelectionHeaders: ColumnHeader[];
+  selectedDynamicColumnHeaders: ColumnHeader[];
   // Empty Set would signify "show all". `filteredPluginTypes` will never have
   // all pluginTypes in the Set.
   filteredPluginTypes: Set<PluginType>;

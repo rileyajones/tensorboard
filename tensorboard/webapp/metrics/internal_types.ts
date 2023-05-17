@@ -44,6 +44,7 @@ export interface CardMetadata {
    * A `null` runId indicates all runs.
    */
   runId: string | null;
+  experimentIds: string[];
 }
 
 /**

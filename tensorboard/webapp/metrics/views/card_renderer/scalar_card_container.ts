@@ -88,12 +88,14 @@ import {
   getMetricsScalarSmoothing,
   getMetricsTooltipSort,
   getMetricsXAxisType,
-  getRangeSelectionHeaders,
-  getSingleSelectionHeaders,
+  getStaticColumnHeaders,
   RunToSeries,
 } from '../../store';
 import {CardId, CardMetadata, HeaderEditInfo, XAxisType} from '../../types';
-import {getFilteredRenderableRunsIdsFromRoute} from '../main_view/common_selectors';
+import {
+  getAllPotentialColumnsForCard,
+  getFilteredRenderableRunsIdsFromRoute,
+} from '../main_view/common_selectors';
 import {CardRenderer} from '../metrics_view_types';
 import {getTagDisplayName} from '../utils';
 import {DataDownloadDialogContainer} from './data_download_dialog_container';
@@ -460,18 +462,8 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
       this.cardId
     );
 
-    this.columnHeaders$ = combineLatest([
-      this.stepOrLinkedTimeSelection$,
-      this.store.select(getSingleSelectionHeaders),
-      this.store.select(getRangeSelectionHeaders),
-    ]).pipe(
-      map(([timeSelection, singleSelectionHeaders, rangeSelectionHeaders]) => {
-        if (!timeSelection || timeSelection.end === null) {
-          return singleSelectionHeaders;
-        } else {
-          return rangeSelectionHeaders;
-        }
-      })
+    this.columnHeaders$ = this.store.select(
+      getAllPotentialColumnsForCard(this.cardId)
     );
 
     this.chartMetadataMap$ = partitionedSeries$.pipe(

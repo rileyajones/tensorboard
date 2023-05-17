@@ -16,7 +16,7 @@ import {DeepReadonly} from '../util/types';
 import {CardGroup, CardIdWithMetadata} from './types';
 
 export function groupCardIdWithMetdata(
-  cards: DeepReadonly<CardIdWithMetadata[]>
+  cards: CardIdWithMetadata[]
 ): CardGroup[] {
   const tagPrefix = new Map<string, CardGroup>();
 

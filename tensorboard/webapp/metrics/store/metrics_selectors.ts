@@ -48,6 +48,7 @@ import {
 } from './metrics_types';
 import {ColumnHeader, DataTableMode} from '../../widgets/data_table/types';
 import {Extent} from '../../widgets/line_chart_v2/lib/public_types';
+import {memoize} from '../../util/memoize';
 
 const selectMetricsState =
   createFeatureSelector<MetricsState>(METRICS_FEATURE_KEY);
@@ -137,10 +138,7 @@ const getCardMetadataMap = createSelector(
 
 export const getCardMetadata = createSelector(
   getCardMetadataMap,
-  (
-    metadataMap: CardMetadataMap,
-    cardId: CardId
-  ): DeepReadonly<CardMetadata> | null => {
+  (metadataMap: CardMetadataMap, cardId: CardId): CardMetadata | null => {
     if (!metadataMap.hasOwnProperty(cardId)) {
       return null;
     }
@@ -154,6 +152,12 @@ export const getCardStateMap = createSelector(
     return state.cardStateMap;
   }
 );
+
+export const getCardExperimentId = memoize((cardId: string) => {
+  return createSelector(getCardMetadataMap, (metadataMap) => {
+    return metadataMap[cardId].tag;
+  });
+});
 
 // A cheap identity selector to skip recomputing selectors when `state` changes.
 const selectVisibleCardMap = createSelector(
@@ -405,20 +409,6 @@ export const getMetricsStepMinMax = createSelector(
   }
 );
 
-export const getSingleSelectionHeaders = createSelector(
-  selectMetricsState,
-  (state: MetricsState): ColumnHeader[] => {
-    return state.singleSelectionHeaders;
-  }
-);
-
-export const getRangeSelectionHeaders = createSelector(
-  selectMetricsState,
-  (state: MetricsState): ColumnHeader[] => {
-    return state.rangeSelectionHeaders;
-  }
-);
-
 /**
  * Returns value of the linked time set by user. When linked time selection is never
  * set, it returns the default value which is derived from the timeseries data
@@ -628,3 +618,37 @@ export const getMetricsCardTimeSelection = createSelector(
     );
   }
 );
+
+export const getSingleSelectionHeaders = createSelector(
+  selectMetricsState,
+  (state: MetricsState): ColumnHeader[] => {
+    return state.singleSelectionHeaders;
+  }
+);
+
+export const getRangeSelectionHeaders = createSelector(
+  selectMetricsState,
+  (state: MetricsState): ColumnHeader[] => {
+    return state.rangeSelectionHeaders;
+  }
+);
+
+export const getDynamicColumns = createSelector(
+  selectMetricsState,
+  (state: MetricsState): ColumnHeader[] => {
+    return state.selectedDynamicColumnHeaders;
+  }
+);
+
+export const getStaticColumnHeaders = memoize((cardId: string) => {
+  return createSelector(
+    (state) => state,
+    getSingleSelectionHeaders,
+    getRangeSelectionHeaders,
+    (state, singleSelectionHeaders, rangeSelectionHeaders) => {
+      return getMetricsCardRangeSelectionEnabled(state, cardId)
+        ? rangeSelectionHeaders
+        : singleSelectionHeaders;
+    }
+  );
+});
