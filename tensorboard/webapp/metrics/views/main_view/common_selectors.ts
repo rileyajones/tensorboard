@@ -200,8 +200,9 @@ export const getFilteredRenderableRunsIdsFromRoute = createSelector(
 
 export const getScalarTagsForRunSelection = createSelector(
   getMetricsTagMetadata,
+  getCurrentRouteRunSelection,
   getFilteredRenderableRunsFromRoute,
-  (tagMetadata, filteredRenderableRuns) => {
+  (tagMetadata, runSelection, filteredRenderableRuns) => {
     const renderableRunIds = new Set(
       filteredRenderableRuns.map(({run: {id}}) => id)
     );
@@ -209,10 +210,12 @@ export const getScalarTagsForRunSelection = createSelector(
       Object.entries(tagMetadata.scalars.tagToRuns)
         // If there are runs selected, filter to a list of tags with at least one selected run
         .filter(([, runs]) => {
-          if (!renderableRunIds.size) {
+          if (!runSelection!.size || !renderableRunIds.size) {
             return true;
           }
-          return runs.some((run) => renderableRunIds.has(run));
+          return runs.some(
+            (run) => renderableRunIds.has(run) && runSelection?.get(run)
+          );
         })
         .map(([tag]) => tag)
     );
