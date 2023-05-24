@@ -47,13 +47,13 @@ import {CardState} from '../../store';
 import {HeaderEditInfo, TooltipSort, XAxisType} from '../../types';
 import {
   MinMaxStep,
+  RunToHParamValues,
   ScalarCardDataSeries,
   ScalarCardSeriesMetadata,
   ScalarCardSeriesMetadataMap,
 } from './scalar_card_types';
 import {
   ColumnHeader,
-  ColumnHeaderType,
   DataTableMode,
   SortingInfo,
   SortingOrder,
@@ -101,6 +101,7 @@ export class ScalarCardComponent<Downloader> {
   @Input() minMaxStep!: MinMaxStep;
   @Input() userViewBox!: Extent | null;
   @Input() columnHeaders!: ColumnHeader[];
+  @Input() runToHParamValues!: RunToHParamValues;
   @Input() rangeEnabled!: boolean;
 
   @Output() onFullSizeToggle = new EventEmitter<void>();

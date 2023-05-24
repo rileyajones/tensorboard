@@ -57,6 +57,8 @@ import {
   getRun,
   getRunColorMap,
   getCurrentRouteRunSelection,
+  getSingleSelectionHeaders,
+  getRangeSelectionHeaders,
 } from '../../../selectors';
 import {DataLoadState} from '../../../types/data';
 import {
@@ -89,12 +91,15 @@ import {
   getMetricsScalarSmoothing,
   getMetricsTooltipSort,
   getMetricsXAxisType,
-  getRangeSelectionHeaders,
-  getSingleSelectionHeaders,
+  getColumnHeadersForCard,
   RunToSeries,
 } from '../../store';
 import {CardId, CardMetadata, HeaderEditInfo, XAxisType} from '../../types';
-import {getFilteredRenderableRunsIdsFromRoute} from '../main_view/common_selectors';
+import {
+  getFilteredRenderableRunsIdsFromRoute,
+  getAllPotentialColumnsForCard,
+  getFilteredRenderableRunsFromRoute,
+} from '../main_view/common_selectors';
 import {CardRenderer} from '../metrics_view_types';
 import {getTagDisplayName} from '../utils';
 import {DataDownloadDialogContainer} from './data_download_dialog_container';
@@ -102,6 +107,7 @@ import {
   MinMaxStep,
   PartialSeries,
   PartitionedSeries,
+  RunToHParamValues,
   ScalarCardDataSeries,
   ScalarCardPoint,
   ScalarCardSeriesMetadataMap,
@@ -144,11 +150,6 @@ function areSeriesEqual(
   });
 }
 
-function isMinMaxStepValid(minMax: MinMaxStep | undefined): boolean {
-  if (!minMax) return false;
-  return !(minMax.minStep === -Infinity && minMax.maxStep === Infinity);
-}
-
 @Component({
   selector: 'scalar-card',
   template: `
@@ -177,6 +178,7 @@ function isMinMaxStepValid(minMax: MinMaxStep | undefined): boolean {
       [minMaxStep]="minMaxSteps$ | async"
       [userViewBox]="userViewBox$ | async"
       [columnHeaders]="columnHeaders$ | async"
+      [runToHParamValues]="runToHParamValues$ | async"
       [rangeEnabled]="rangeEnabled$ | async"
       (onFullSizeToggle)="onFullSizeToggle()"
       (onPinClicked)="pinStateChanged.emit($event)"
@@ -222,6 +224,7 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
   chartMetadataMap$?: Observable<ScalarCardSeriesMetadataMap>;
   linkedTimeSelection$?: Observable<TimeSelectionView | null>;
   columnHeaders$?: Observable<ColumnHeader[]>;
+  runToHParamValues$?: Observable<RunToHParamValues>;
   minMaxSteps$?: Observable<MinMaxStep | undefined>;
   userViewBox$?: Observable<Extent | null>;
   stepOrLinkedTimeSelection$?: Observable<TimeSelection | undefined>;
@@ -461,19 +464,20 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
       this.cardId
     );
 
-    this.columnHeaders$ = combineLatest([
-      this.stepOrLinkedTimeSelection$,
-      this.store.select(getSingleSelectionHeaders),
-      this.store.select(getRangeSelectionHeaders),
-    ]).pipe(
-      map(([timeSelection, singleSelectionHeaders, rangeSelectionHeaders]) => {
-        if (!timeSelection || timeSelection.end === null) {
-          return singleSelectionHeaders;
-        } else {
-          return rangeSelectionHeaders;
-        }
-      })
+    this.columnHeaders$ = this.store.select(
+      getAllPotentialColumnsForCard(this.cardId)
     );
+
+    this.runToHParamValues$ = this.store
+      .select(getFilteredRenderableRunsFromRoute)
+      .pipe(
+        map((items) => {
+          return items.reduce((map, item) => {
+            map[item.run.id] = Object.fromEntries(item.hparams.entries());
+            return map;
+          }, {} as RunToHParamValues);
+        })
+      );
 
     this.chartMetadataMap$ = partitionedSeries$.pipe(
       switchMap<

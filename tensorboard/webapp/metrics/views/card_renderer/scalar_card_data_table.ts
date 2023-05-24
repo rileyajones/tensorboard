@@ -23,9 +23,11 @@ import {TimeSelection} from '../../../widgets/card_fob/card_fob_types';
 import {findClosestIndex} from '../../../widgets/line_chart_v2/sub_view/line_chart_interactive_utils';
 import {HeaderEditInfo} from '../../types';
 import {
+  RunToHParamValues,
   ScalarCardDataSeries,
   ScalarCardPoint,
   ScalarCardSeriesMetadataMap,
+  SmoothedSeriesMetadata,
 } from './scalar_card_types';
 import {
   ColumnHeader,
@@ -57,6 +59,7 @@ export class ScalarCardDataTable {
   @Input() dataSeries!: ScalarCardDataSeries[];
   @Input() stepOrLinkedTimeSelection!: TimeSelection;
   @Input() columnHeaders!: ColumnHeader[];
+  @Input() runToHParamValues!: RunToHParamValues;
   @Input() sortingInfo!: SortingInfo;
   @Input() columnCustomizationEnabled!: boolean;
   @Input() smoothingEnabled!: boolean;
@@ -245,6 +248,16 @@ export class ScalarCardDataTable {
               }
               selectedStepData[header.name] =
                 closestEndPoint.value - closestStartPoint.value;
+              continue;
+            case ColumnHeaderType.HPARAM:
+              const id = this.smoothingEnabled
+                ? (metadata as SmoothedSeriesMetadata).originalSeriesId
+                : metadata.id;
+              const value = this.runToHParamValues[id]?.[header.name];
+              if (value === undefined) {
+                continue;
+              }
+              selectedStepData[header.name] = value.toString();
               continue;
             default:
               continue;

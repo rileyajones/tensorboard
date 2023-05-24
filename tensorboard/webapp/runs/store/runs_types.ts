@@ -19,6 +19,7 @@ limitations under the License.
 import {NamespaceContextedState} from '../../app_routing/namespaced_state_reducer_helper';
 import {LoadState} from '../../types/data';
 import {SortDirection} from '../../types/ui';
+import {ColumnHeader, SortingInfo} from '../../widgets/data_table/types';
 import {HparamValue} from '../data_source/runs_data_source_types';
 import {GroupBy, GroupByKey, SortKey} from '../types';
 
@@ -74,11 +75,16 @@ export type RunsDataState = NamespaceContextedState<
 
 export interface RunsUiNamespacedState {
   paginationOption: {pageIndex: number; pageSize: number};
+  /**
+   * This is now @deprecated and will be removed once the hparams feature is fully enabled
+   */
   sort: {key: SortKey | null; direction: SortDirection};
   /**
    * Indicates whether the run is selected.
    */
   selectionState: Map<RunId, boolean>;
+  runsTableHeaders: ColumnHeader[];
+  sortingInfo: SortingInfo;
 }
 
 export interface RunsUiNonNamespacedState {}

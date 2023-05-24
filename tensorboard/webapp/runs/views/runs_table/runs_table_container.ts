@@ -22,6 +22,7 @@ import {
 import {createSelector, Store} from '@ngrx/store';
 import {BehaviorSubject, combineLatest, Observable, of, Subject} from 'rxjs';
 import {
+  combineLatestWith,
   distinctUntilChanged,
   filter,
   map,
@@ -30,6 +31,7 @@ import {
   switchMap,
   take,
   takeUntil,
+  tap,
 } from 'rxjs/operators';
 import * as alertActions from '../../../alert/actions';
 import {areSameRouteKindAndExperiments} from '../../../app_routing';
@@ -57,6 +59,7 @@ import {
   getRunSelectorRegexFilter,
   getRunSelectorSort,
   getRunsLoadState,
+  getRunsTableHeaders,
 } from '../../../selectors';
 import {DataLoadState, LoadState} from '../../../types/data';
 import {SortDirection} from '../../../types/ui';
@@ -64,6 +67,7 @@ import {matchRunToRegex} from '../../../util/matcher';
 import {getEnableHparamsInTimeSeries} from '../../../feature_flag/store/feature_flag_selectors';
 import {
   ColumnHeaderType,
+  SortingInfo,
   SortingOrder,
   TableData,
 } from '../../../widgets/data_table/types';
@@ -75,6 +79,7 @@ import {
   runSelectorRegexFilterChanged,
   runSelectorSortChanged,
   runTableShown,
+  runsTableHeaderAdded,
   singleRunSelected,
 } from '../../actions';
 import {MAX_NUM_RUNS_TO_ENABLE_BY_DEFAULT} from '../../store/runs_types';
@@ -85,6 +90,11 @@ import {
   MetricColumn,
 } from './runs_table_component';
 import {RunsTableColumn, RunTableItem} from './types';
+import {
+  getFilteredRenderableRunsFromRoute,
+  getPotentialHparamColumns,
+} from '../../../metrics/views/main_view/common_selectors';
+import {RunToHParamValues} from '../../../metrics/views/card_renderer/scalar_card_types';
 
 const getRunsLoading = createSelector<
   State,
@@ -229,10 +239,10 @@ function matchFilter(
     ></runs-table-component>
     <tb-data-table
       *ngIf="HParamsEnabled.value"
-      [headers]="runsColumns"
+      [headers]="runsColumns$ | async"
       [data]="allRunsTableData$ | async"
-      [sortingInfo]="sortingInfo"
-      [columnCustomizationEnabled]="columnCustomizationEnabled"
+      [sortingInfo]="sortingInfo$ | async"
+      columnCustomizationEnabled="true"
       [smoothingEnabled]="smoothingEnabled"
       (sortDataBy)="sortDataBy($event)"
       (orderColumns)="orderColumns($event)"
@@ -250,6 +260,11 @@ function matchFilter(
       :host.flex-layout > runs-table-component {
         width: 100%;
       }
+
+      :host.flex-layout > tb-data-table {
+        overflow-y: scroll;
+        width: 100%;
+      }
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -263,21 +278,12 @@ export class RunsTableContainer implements OnInit, OnDestroy {
   pageItems$?: Observable<RunTableItem[]>;
   numSelectedItems$?: Observable<number>;
 
-  // TODO(jameshollyer): Move these values to ngrx and make these Observables.
-  runsColumns = [
-    {
-      type: ColumnHeaderType.RUN,
-      name: 'run',
-      displayName: 'Run',
-      enabled: true,
-    },
-  ];
-  sortingInfo = {
+  // DO_NOT_SUBMIT move this to redux
+  sortingInfo$ = new BehaviorSubject<SortingInfo>({
     header: ColumnHeaderType.RUN,
     name: 'run',
     order: SortingOrder.ASCENDING,
-  };
-  columnCustomizationEnabled = true;
+  });
   smoothingEnabled = false;
 
   hparamColumns$: Observable<HparamColumn[]> = of([]);
@@ -311,6 +317,28 @@ export class RunsTableContainer implements OnInit, OnDestroy {
   paginationOption$ = this.store.select(getRunSelectorPaginationOption);
   regexFilter$ = this.store.select(getRunSelectorRegexFilter);
   HParamsEnabled = new BehaviorSubject<boolean>(false);
+  runsColumns$ = this.store.select(getRunsTableHeaders).pipe(
+    combineLatestWith(this.store.select(getPotentialHparamColumns)),
+    map(([runTableHeaders, getPotentialHparamColumns]) => {
+      return [
+        ...runTableHeaders,
+        ...getPotentialHparamColumns.map((header) => ({
+          ...header,
+          enabled: true,
+        })),
+      ];
+    })
+  );
+  runToHParamValues$ = this.store
+    .select(getFilteredRenderableRunsFromRoute)
+    .pipe(
+      map((items) => {
+        return items.reduce((map, item) => {
+          map[item.run.id] = Object.fromEntries(item.hparams.entries());
+          return map;
+        }, {} as RunToHParamValues);
+      })
+    );
   private readonly ngUnsubscribe = new Subject<void>();
 
   constructor(private readonly store: Store<State>) {}
@@ -575,26 +603,60 @@ export class RunsTableContainer implements OnInit, OnDestroy {
     return combineLatest([
       this.store.select(getRuns, {experimentId}),
       this.store.select(getRunColorMap),
+      this.runsColumns$,
+      this.runToHParamValues$,
+      this.sortingInfo$,
     ]).pipe(
-      map(([runs, colorMap]) => {
-        return runs.map((run) => {
-          const tableData: TableData = {
-            id: run.id,
-            color: colorMap[run.id],
-          };
-          this.runsColumns.forEach((column) => {
-            switch (column.type) {
-              case ColumnHeaderType.RUN:
-                tableData[column.name!] = run.name;
-                break;
-              default:
-                break;
-            }
-          });
-          return tableData;
-        });
+      map(([runs, colorMap, runsColumns, runToHParamValues, sortingInfo]) => {
+        const sortingHeader = runsColumns.find(
+          (header) => header.name === sortingInfo.name
+        );
+        return (
+          runs
+            .map((run) => {
+              const tableData: TableData = {
+                id: run.id,
+                color: colorMap[run.id],
+              };
+              runsColumns.forEach((column) => {
+                switch (column.type) {
+                  case ColumnHeaderType.RUN:
+                    tableData[column.name!] = run.name;
+                    break;
+                  case ColumnHeaderType.HPARAM:
+                    tableData[column.name] = runToHParamValues[run.id]?.[
+                      column.name
+                    ] as string | number;
+                    break;
+                  default:
+                    break;
+                }
+              });
+              return tableData;
+            })
+            // DO_NOT_SUBMIT this needs to be shared with the scalar card data table
+            .sort((point1: TableData, point2: TableData) => {
+              if (!sortingHeader) {
+                return 0;
+              }
+              const p1 = makeValueSortable(point1[sortingHeader.name]);
+              const p2 = makeValueSortable(point2[sortingHeader.name]);
+              if (p1 < p2) {
+                return sortingInfo.order === SortingOrder.ASCENDING ? -1 : 1;
+              }
+              if (p1 > p2) {
+                return sortingInfo.order === SortingOrder.ASCENDING ? 1 : -1;
+              }
+
+              return 0;
+            })
+        );
       })
     );
+  }
+
+  sortDataBy(sortingInfo: SortingInfo) {
+    this.sortingInfo$.next(sortingInfo);
   }
 
   private getRunTableItemsForExperiment(
@@ -737,6 +799,18 @@ export class RunsTableContainer implements OnInit, OnDestroy {
       })
     );
   }
+}
+
+function makeValueSortable(value: number | string | null | undefined) {
+  if (
+    Number.isNaN(value) ||
+    value === 'NaN' ||
+    value === undefined ||
+    value === null
+  ) {
+    return -Infinity;
+  }
+  return value;
 }
 
 export const TEST_ONLY = {
