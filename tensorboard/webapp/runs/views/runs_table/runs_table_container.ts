@@ -22,6 +22,7 @@ import {
 import {createSelector, Store} from '@ngrx/store';
 import {BehaviorSubject, combineLatest, Observable, of, Subject} from 'rxjs';
 import {
+  combineLatestWith,
   distinctUntilChanged,
   filter,
   map,
@@ -85,6 +86,10 @@ import {
   MetricColumn,
 } from './runs_table_component';
 import {RunsTableColumn, RunTableItem} from './types';
+import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {ColumnSelectorModal} from '../../../widgets/data_table/column_selector_modal';
+import {ComponentType} from '@angular/cdk/overlay';
+import {getPotentialHparamColumns} from '../../../metrics/views/main_view/common_selectors';
 
 const getRunsLoading = createSelector<
   State,
@@ -227,16 +232,19 @@ function matchFilter(
       (onHparamDiscreteFilterChanged)="onHparamDiscreteFilterChanged($event)"
       (onMetricFilterChanged)="onMetricFilterChanged($event)"
     ></runs-table-component>
-    <tb-data-table
-      *ngIf="HParamsEnabled.value"
-      [headers]="runsColumns"
-      [data]="allRunsTableData$ | async"
-      [sortingInfo]="sortingInfo"
-      [columnCustomizationEnabled]="columnCustomizationEnabled"
-      [smoothingEnabled]="smoothingEnabled"
-      (sortDataBy)="sortDataBy($event)"
-      (orderColumns)="orderColumns($event)"
-    ></tb-data-table>
+    <ng-container *ngIf="HParamsEnabled.value">
+      <button (click)="openColumnSelector()">Click Me Maybe?</button>
+      <tb-data-table
+        [headers]="runsColumns"
+        [data]="allRunsTableData$ | async"
+        [sortingInfo]="sortingInfo"
+        [columnCustomizationEnabled]="columnCustomizationEnabled"
+        [smoothingEnabled]="smoothingEnabled"
+        (sortDataBy)="sortDataBy($event)"
+        (orderColumns)="orderColumns($event)"
+      ></tb-data-table>
+      <ng-container> </ng-container
+    ></ng-container>
   `,
   host: {
     '[class.flex-layout]': 'useFlexibleLayout',
@@ -311,14 +319,28 @@ export class RunsTableContainer implements OnInit, OnDestroy {
   paginationOption$ = this.store.select(getRunSelectorPaginationOption);
   regexFilter$ = this.store.select(getRunSelectorRegexFilter);
   HParamsEnabled = new BehaviorSubject<boolean>(false);
-  private readonly ngUnsubscribe = new Subject<void>();
 
-  constructor(private readonly store: Store<State>) {}
+  // Allow the dialog component type to be overridden for testing purposes.
+  columnSelectorDialogType: ComponentType<any> = ColumnSelectorModal;
+  private readonly ngUnsubscribe = new Subject<void>();
+  private columnSelectorDialog?: MatDialogRef<ColumnSelectorModal>;
+
+  constructor(
+    private readonly store: Store<State>,
+    private dialog: MatDialog
+  ) {}
 
   isExperimentNameVisible() {
     return this.columns.some((column) => {
       return column === RunsTableColumn.EXPERIMENT_NAME;
     });
+  }
+
+  openColumnSelector() {
+    this.store
+      .select(getPotentialHparamColumns)
+      .pipe(combineLatestWith(this.runsColumns));
+    this.columnSelectorDialog = this.dialog.open(this.columnSelectorDialogType);
   }
 
   ngOnInit() {

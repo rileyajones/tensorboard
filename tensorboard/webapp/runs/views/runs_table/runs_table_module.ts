@@ -41,12 +41,14 @@ import {RunsGroupMenuButtonComponent} from './runs_group_menu_button_component';
 import {RunsGroupMenuButtonContainer} from './runs_group_menu_button_container';
 import {RunsTableComponent} from './runs_table_component';
 import {RunsTableContainer} from './runs_table_container';
+import {ColumnSelectorModule} from '../../../widgets/data_table/column_selector_module';
 
 @NgModule({
   imports: [
     ColorPickerModule,
     CommonModule,
     DataTableModule,
+    ColumnSelectorModule,
     ExperimentAliasModule,
     FilterInputModule,
     MatFormFieldModule,

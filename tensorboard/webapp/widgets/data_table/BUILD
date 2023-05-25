@@ -22,6 +22,16 @@ tf_sass_binary(
     ],
 )
 
+tf_sass_binary(
+    name = "column_selector_modal_styles",
+    src = "column_selector_modal.scss",
+    strict_deps = False,
+    deps = [
+        "//tensorboard/webapp:angular_material_sass_deps",
+        "//tensorboard/webapp/theme",
+    ],
+)
+
 tf_ng_module(
     name = "data_table",
     srcs = [
@@ -56,6 +66,28 @@ tf_ng_module(
     deps = [
         ":types",
         "//tensorboard/webapp/angular:expect_angular_material_icon",
+        "@npm//@angular/common",
+        "@npm//@angular/core",
+    ],
+)
+
+tf_ng_module(
+    name = "column_selector",
+    srcs = [
+        "column_selector_container.ts",
+        "column_selector_modal.ts",
+        "column_selector_module.ts",
+    ],
+    assets = [
+        "column_selector_modal.ng.html",
+        ":column_selector_modal_styles",
+    ],
+    deps = [
+        ":types",
+        "//tensorboard/webapp/angular:expect_angular_material_button",
+        "//tensorboard/webapp/angular:expect_angular_material_dialog",
+        "//tensorboard/webapp/angular:expect_angular_material_icon",
+        "//tensorboard/webapp/angular:expect_angular_material_input",
         "@npm//@angular/common",
         "@npm//@angular/core",
     ],
