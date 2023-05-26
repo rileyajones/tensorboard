@@ -12,41 +12,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Output,
-  Input,
-  Inject,
-} from '@angular/core';
+import {Component, EventEmitter, Output, Input} from '@angular/core';
 import {ColumnHeader} from './types';
-import {MAT_DIALOG_DATA} from '@angular/material/dialog';
 
 @Component({
-  selector: 'tb-data-table-column-selector-modal',
-  templateUrl: 'column_selector_modal.ng.html',
-  styleUrls: ['column_selector_modal.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  selector: 'tb-data-table-column-selector-component',
+  templateUrl: 'column_selector_component.ng.html',
+  styleUrls: ['column_selector_component.css'],
 })
-export class ColumnSelectorModal {
-  searchInput = '';
-
-  // potentialColumns: ColumnHeader[];
-  // currentColumns: Set<ColumnHeader>;
+export class ColumnSelectorComponent {
+  @Input() potentialColumns!: ColumnHeader[];
+  @Input() currentColumns!: ColumnHeader[];
   @Output() columnSelected = new EventEmitter<ColumnHeader>();
 
-  constructor(
-    @Inject(MAT_DIALOG_DATA)
-    public data: {
-      potentialColumns: ColumnHeader[];
-      currentColumns: Set<ColumnHeader>;
-    }
-  ) {}
+  searchInput = '';
 
   getPotentialColumns() {
-    return this.data.potentialColumns.filter((columnHeader) => {
-      !this.data.currentColumns.has(columnHeader);
+    const currentColumnNames = new Set(
+      this.currentColumns.map(({name}) => name)
+    );
+    return this.potentialColumns.filter((columnHeader) => {
+      return (
+        !currentColumnNames.has(columnHeader.name) &&
+        columnHeader.name.match(this.searchInput)
+      );
     });
   }
 }

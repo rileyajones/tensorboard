@@ -19,17 +19,21 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {ColumnSelectorContainer} from './column_selector_container';
 import {MatButtonModule} from '@angular/material/button';
-import {ColumnSelectorModal} from './column_selector_modal';
+import {ColumnSelectorComponent} from './column_selector_component';
+import {MatRippleModule} from '@angular/material/core';
+import {FormsModule} from '@angular/forms';
 
 @NgModule({
-  declarations: [ColumnSelectorContainer, ColumnSelectorModal],
+  declarations: [ColumnSelectorContainer, ColumnSelectorComponent],
   imports: [
     CommonModule,
     MatIconModule,
     MatInputModule,
+    MatRippleModule,
     MatButtonModule,
+    FormsModule,
     MatIconModule,
   ],
-  exports: [ColumnSelectorContainer, ColumnSelectorModal],
+  exports: [ColumnSelectorContainer],
 })
 export class ColumnSelectorModule {}

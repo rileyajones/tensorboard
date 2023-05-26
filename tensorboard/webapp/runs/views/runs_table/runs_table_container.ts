@@ -15,9 +15,13 @@ limitations under the License.
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   Input,
   OnDestroy,
   OnInit,
+  TemplateRef,
+  ViewChild,
+  ViewContainerRef,
 } from '@angular/core';
 import {createSelector, Store} from '@ngrx/store';
 import {BehaviorSubject, combineLatest, Observable, of, Subject} from 'rxjs';
@@ -31,6 +35,7 @@ import {
   switchMap,
   take,
   takeUntil,
+  tap,
 } from 'rxjs/operators';
 import * as alertActions from '../../../alert/actions';
 import {areSameRouteKindAndExperiments} from '../../../app_routing';
@@ -66,6 +71,7 @@ import {SortDirection} from '../../../types/ui';
 import {matchRunToRegex} from '../../../util/matcher';
 import {getEnableHparamsInTimeSeries} from '../../../feature_flag/store/feature_flag_selectors';
 import {
+  ColumnHeader,
   ColumnHeaderType,
   SortingInfo,
   TableData,
@@ -78,6 +84,7 @@ import {
   runSelectorRegexFilterChanged,
   runSelectorSortChanged,
   runTableShown,
+  runsTableHeaderAdded,
   runsTableSortingInfoChanged,
   singleRunSelected,
 } from '../../actions';
@@ -89,14 +96,12 @@ import {
   MetricColumn,
 } from './runs_table_component';
 import {RunsTableColumn, RunTableItem} from './types';
-import {MatDialog, MatDialogRef} from '@angular/material/dialog';
-import {ColumnSelectorModal} from '../../../widgets/data_table/column_selector_modal';
-import {ComponentType} from '@angular/cdk/overlay';
 import {
   getFilteredRenderableRunsFromRoute,
   getPotentialHparamColumns,
 } from '../../../metrics/views/main_view/common_selectors';
 import {RunToHParamValues} from '../../data_source/runs_data_source_types';
+import {ColumnSelectorContainer} from '../../../widgets/data_table/column_selector_container';
 
 const getRunsLoading = createSelector<
   State,
@@ -239,8 +244,21 @@ function matchFilter(
       (onHparamDiscreteFilterChanged)="onHparamDiscreteFilterChanged($event)"
       (onMetricFilterChanged)="onMetricFilterChanged($event)"
     ></runs-table-component>
-    <ng-container *ngIf="HParamsEnabled.value">
-      <button (click)="openColumnSelector()">Click Me Maybe?</button>
+    <div class="runs-data-table-container" *ngIf="HParamsEnabled.value">
+      <button
+        mat-icon-button
+        class="add-column-btn"
+        (click)="openColumnSelector($event)"
+        title="Click Me Maybe?"
+      >
+        <mat-icon svgIcon="flag_24px"></mat-icon>
+      </button>
+      <tb-data-table-column-selector
+        #columnSelector
+        [potentialColumns]="potentialColumns$ | async"
+        [currentColumns]="runsColumns$ | async"
+        (columnSelected)="columnAdded($event)"
+      ></tb-data-table-column-selector>
       <tb-data-table
         [headers]="runsColumns$ | async"
         [data]="allRunsTableData$ | async"
@@ -250,7 +268,7 @@ function matchFilter(
         (sortDataBy)="sortDataBy($event)"
         (orderColumns)="orderColumns($event)"
       ></tb-data-table>
-    </ng-container>
+    </div>
   `,
   host: {
     '[class.flex-layout]': 'useFlexibleLayout',
@@ -267,6 +285,10 @@ function matchFilter(
 
       :host.flex-layout > tb-data-table {
         overflow-y: scroll;
+        width: 100%;
+      }
+
+      :host .runs-data-table-container {
         width: 100%;
       }
     `,
@@ -310,11 +332,16 @@ export class RunsTableContainer implements OnInit, OnDestroy {
   @Input() experimentIds!: string[];
   @Input() showHparamsAndMetrics = false;
 
+  @ViewChild('columnSelector', {static: false})
+  private readonly columnSelector!: ColumnSelectorContainer;
+
   sortOption$ = this.store.select(getRunSelectorSort);
   paginationOption$ = this.store.select(getRunSelectorPaginationOption);
   regexFilter$ = this.store.select(getRunSelectorRegexFilter);
   HParamsEnabled = new BehaviorSubject<boolean>(false);
   runsColumns$ = this.store.select(getRunsTableHeaders);
+
+  potentialColumns$ = this.store.select(getPotentialHparamColumns);
 
   runToHParamValues$ = this.store
     .select(getFilteredRenderableRunsFromRoute)
@@ -329,27 +356,25 @@ export class RunsTableContainer implements OnInit, OnDestroy {
 
   private readonly ngUnsubscribe = new Subject<void>();
 
-  // Allow the dialog component type to be overridden for testing purposes.
-  columnSelectorDialogType: ComponentType<any> = ColumnSelectorModal;
-  private readonly ngUnsubscribe = new Subject<void>();
-  private columnSelectorDialog?: MatDialogRef<ColumnSelectorModal>;
+  constructor(private readonly store: Store<State>) {}
 
-  constructor(
-    private readonly store: Store<State>,
-    private dialog: MatDialog
-  ) {}
+  openColumnSelector(event: MouseEvent) {
+    event.stopPropagation();
+    this.columnSelector.openAtPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
+  columnAdded(header: ColumnHeader) {
+    header.enabled = true;
+    this.store.dispatch(runsTableHeaderAdded({header}));
+  }
 
   isExperimentNameVisible() {
     return this.columns.some((column) => {
       return column === RunsTableColumn.EXPERIMENT_NAME;
     });
-  }
-
-  openColumnSelector() {
-    this.store
-      .select(getPotentialHparamColumns)
-      .pipe(combineLatestWith(this.runsColumns));
-    this.columnSelectorDialog = this.dialog.open(this.columnSelectorDialogType);
   }
 
   ngOnInit() {
