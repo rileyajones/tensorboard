@@ -19,6 +19,7 @@ import {
   Input,
   ViewChild,
   ElementRef,
+  HostListener,
 } from '@angular/core';
 import {ColumnHeader} from './types';
 import {BehaviorSubject} from 'rxjs';
@@ -29,8 +30,7 @@ import {BehaviorSubject} from 'rxjs';
     <div class="content" #content (click)="$event.stopPropagation()">
       <tb-data-table-column-selector-component
         *ngIf="visible$ | async"
-        [potentialColumns]="potentialColumns"
-        [currentColumns]="currentColumns"
+        [selectableColumns]="getSelectableColumns()"
         (columnSelected)="columnSelected.emit($event)"
       ></tb-data-table-column-selector-component>
     </div>
@@ -52,7 +52,8 @@ export class ColumnSelectorContainer {
 
   @ViewChild('content', {static: false})
   private readonly content!: ElementRef;
-  private clickListener: any = this.onDocumentClicked.bind(this);
+
+  private clickListener: any = this.close.bind(this);
 
   public openAtPosition(position: {x: number; y: number}) {
     this.content.nativeElement.style.left = position.x + 'px';
@@ -61,12 +62,18 @@ export class ColumnSelectorContainer {
     document.addEventListener('click', this.clickListener);
   }
 
+  @HostListener('document:keydown.escape', ['$event'])
   public close() {
     document.removeEventListener('click', this.clickListener);
     this.visible$.next(false);
   }
 
-  onDocumentClicked() {
-    this.close();
+  getSelectableColumns() {
+    const currentColumnNames = new Set(
+      this.currentColumns.map(({name}) => name)
+    );
+    return this.potentialColumns.filter((columnHeader) => {
+      return !currentColumnNames.has(columnHeader.name);
+    });
   }
 }

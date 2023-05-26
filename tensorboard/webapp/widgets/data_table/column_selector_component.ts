@@ -12,30 +12,73 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-import {Component, EventEmitter, Output, Input} from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Output,
+  Input,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
+  HostListener,
+  OnInit,
+} from '@angular/core';
 import {ColumnHeader} from './types';
+import {BehaviorSubject, tap} from 'rxjs';
 
 @Component({
   selector: 'tb-data-table-column-selector-component',
   templateUrl: 'column_selector_component.ng.html',
   styleUrls: ['column_selector_component.css'],
 })
-export class ColumnSelectorComponent {
-  @Input() potentialColumns!: ColumnHeader[];
-  @Input() currentColumns!: ColumnHeader[];
+export class ColumnSelectorComponent implements AfterViewInit {
+  @Input() selectableColumns!: ColumnHeader[];
   @Output() columnSelected = new EventEmitter<ColumnHeader>();
 
-  searchInput = '';
+  @ViewChild('search')
+  private readonly searchField!: ElementRef;
 
-  getPotentialColumns() {
-    const currentColumnNames = new Set(
-      this.currentColumns.map(({name}) => name)
+  searchInput = '';
+  selectedIndex$ = new BehaviorSubject(0);
+
+  ngAfterViewInit() {
+    this.searchInput = '';
+    this.searchField.nativeElement.focus();
+    this.selectedIndex$.next(0);
+  }
+
+  getFilteredColumns() {
+    return this.selectableColumns.filter((columnHeader) =>
+      columnHeader.name.match(this.searchInput)
     );
-    return this.potentialColumns.filter((columnHeader) => {
-      return (
-        !currentColumnNames.has(columnHeader.name) &&
-        columnHeader.name.match(this.searchInput)
-      );
-    });
+  }
+
+  searchInputChanged() {
+    this.selectedIndex$.next(0);
+  }
+
+  selectColumn(header: ColumnHeader) {
+    this.selectedIndex$.next(0);
+    this.columnSelected.emit(header);
+  }
+
+  @HostListener('document:keydown.arrowup', ['$event'])
+  onUpArrow() {
+    this.selectedIndex$.next(Math.max(this.selectedIndex$.getValue() - 1, 0));
+  }
+
+  @HostListener('document:keydown.arrowdown', ['$event'])
+  onDownArrow() {
+    this.selectedIndex$.next(
+      Math.min(
+        this.selectedIndex$.getValue() + 1,
+        this.selectableColumns.length - 1
+      )
+    );
+  }
+
+  @HostListener('document:keydown.enter', ['$event'])
+  onEnterPressed() {
+    this.selectColumn(this.selectableColumns[this.selectedIndex$.getValue()]);
   }
 }

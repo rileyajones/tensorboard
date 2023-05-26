@@ -12,12 +12,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <div class="contents">
-  <input matInput placeholder="Search" [(ngModel)]="searchInput" />
-  <button
-    mat-button
-    *ngFor="let column of getPotentialColumns()"
-    (click)="columnSelected.emit(column)"
-  >
-    {{column.displayName}}
-  </button>
+  <mat-form-field class="search-area">
+    <mat-icon matPrefix class="search-icon" svgIcon="search_24px"></mat-icon>
+    <input
+      matInput
+      #search
+      [(ngModel)]="searchInput"
+      placeholder="Search"
+      (ngModelChange)="searchInputChanged()"
+    />
+  </mat-form-field>
+
+  <div class="column-list">
+    <button
+      mat-button
+      *ngFor="let column of getFilteredColumns(); let i = index"
+      class="column-button"
+      [ngClass]="{
+        'selected': i === (selectedIndex$ | async)
+      }"
+      (click)="selectColumn(column)"
+    >
+      {{column.displayName}}
+    </button>
+  </div>
 </div>
