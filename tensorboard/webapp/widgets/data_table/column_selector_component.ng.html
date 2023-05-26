@@ -23,7 +23,7 @@ limitations under the License.
     />
   </mat-form-field>
 
-  <div class="column-list">
+  <div #columnList class="column-list">
     <button
       mat-button
       *ngFor="let column of getFilteredColumns(); let i = index"

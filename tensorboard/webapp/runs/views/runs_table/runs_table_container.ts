@@ -341,7 +341,9 @@ export class RunsTableContainer implements OnInit, OnDestroy {
   HParamsEnabled = new BehaviorSubject<boolean>(false);
   runsColumns$ = this.store.select(getRunsTableHeaders);
 
-  potentialColumns$ = this.store.select(getPotentialHparamColumns);
+  potentialColumns$ = this.store
+    .select(getPotentialHparamColumns)
+    .pipe(map((columns) => [...columns, ...columns]));
 
   runToHParamValues$ = this.store
     .select(getFilteredRenderableRunsFromRoute)

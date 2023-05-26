@@ -31,15 +31,50 @@ import {BehaviorSubject, tap} from 'rxjs';
   templateUrl: 'column_selector_component.ng.html',
   styleUrls: ['column_selector_component.css'],
 })
-export class ColumnSelectorComponent implements AfterViewInit {
+export class ColumnSelectorComponent implements OnInit, AfterViewInit {
   @Input() selectableColumns!: ColumnHeader[];
   @Output() columnSelected = new EventEmitter<ColumnHeader>();
 
   @ViewChild('search')
   private readonly searchField!: ElementRef;
 
+  @ViewChild('columnList')
+  private readonly columnList!: ElementRef;
+
   searchInput = '';
   selectedIndex$ = new BehaviorSubject(0);
+
+  ngOnInit() {
+    this.selectedIndex$.subscribe(() => {
+      if (!this.columnList) {
+        return;
+      }
+      const selectedButton: HTMLButtonElement =
+        this.columnList.nativeElement.querySelector('button.selected');
+      if (!selectedButton) return;
+
+      // DO_NOT_SUBMIT this is not right
+      const scrollAreaHeight: number =
+        this.columnList.nativeElement.getBoundingClientRect().height;
+      const buttonHeight = selectedButton.getBoundingClientRect().height;
+      let scrollTop = this.columnList.nativeElement.scrollTop;
+      if (selectedButton.offsetTop < scrollTop) {
+        this.columnList.nativeElement.scrollTop = selectedButton.offsetTop;
+        this.columnList.nativeElement.scrollTop = 0;
+      }
+
+      // this.columnList.nativeElement.scrollTop = scrollTop < 0 ? 0 : scrollTop;
+      // if (
+      //   buttonBox.top + buttonBox.height >
+      //   scrollAreaBox.top + scrollAreaBox.height
+      // ) {
+      //   this.columnList.nativeElement.scrollTop =
+      //     buttonBox.top +
+      //     buttonBox.height -
+      //     (scrollAreaBox.top + scrollAreaBox.height);
+      // }
+    });
+  }
 
   ngAfterViewInit() {
     this.searchInput = '';
