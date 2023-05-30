@@ -57,22 +57,20 @@ export class ColumnSelectorComponent implements OnInit, AfterViewInit {
       const scrollAreaHeight: number =
         this.columnList.nativeElement.getBoundingClientRect().height;
       const buttonHeight = selectedButton.getBoundingClientRect().height;
-      let scrollTop = this.columnList.nativeElement.scrollTop;
-      if (selectedButton.offsetTop < scrollTop) {
-        this.columnList.nativeElement.scrollTop = selectedButton.offsetTop;
-        this.columnList.nativeElement.scrollTop = 0;
+      const scrollTop = this.columnList.nativeElement.scrollTop;
+      if (this.selectedIndex$.getValue() * buttonHeight < scrollTop) {
+        this.columnList.nativeElement.scrollTop =
+          this.selectedIndex$.getValue() * buttonHeight;
       }
 
-      // this.columnList.nativeElement.scrollTop = scrollTop < 0 ? 0 : scrollTop;
-      // if (
-      //   buttonBox.top + buttonBox.height >
-      //   scrollAreaBox.top + scrollAreaBox.height
-      // ) {
-      //   this.columnList.nativeElement.scrollTop =
-      //     buttonBox.top +
-      //     buttonBox.height -
-      //     (scrollAreaBox.top + scrollAreaBox.height);
-      // }
+      if (
+        (this.selectedIndex$.getValue() + 1) * buttonHeight >
+        scrollTop + scrollAreaHeight
+      ) {
+        this.columnList.nativeElement.scrollTop =
+          (this.selectedIndex$.getValue() + 1) * buttonHeight -
+          scrollAreaHeight;
+      }
     });
   }
 

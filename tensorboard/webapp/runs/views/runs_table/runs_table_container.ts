@@ -15,18 +15,14 @@ limitations under the License.
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   Input,
   OnDestroy,
   OnInit,
-  TemplateRef,
   ViewChild,
-  ViewContainerRef,
 } from '@angular/core';
 import {createSelector, Store} from '@ngrx/store';
 import {BehaviorSubject, combineLatest, Observable, of, Subject} from 'rxjs';
 import {
-  combineLatestWith,
   distinctUntilChanged,
   filter,
   map,
@@ -35,7 +31,6 @@ import {
   switchMap,
   take,
   takeUntil,
-  tap,
 } from 'rxjs/operators';
 import * as alertActions from '../../../alert/actions';
 import {areSameRouteKindAndExperiments} from '../../../app_routing';
