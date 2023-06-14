@@ -57,6 +57,7 @@ import {
   getRunSelectorRegexFilter,
   getRunSelectorSort,
   getRunsLoadState,
+  getRunsTableFullScreen,
   getRunsTableHeaders,
   getRunsTableSortingInfo,
 } from '../../../selectors';
@@ -90,6 +91,7 @@ import {
 import {RunsTableColumn, RunTableItem} from './types';
 import {getFilteredRenderableRunsFromRoute} from '../../../metrics/views/main_view/common_selectors';
 import {RunToHParamValues} from '../../data_source/runs_data_source_types';
+import {runsTableFullScreenToggled} from '../../../core/actions';
 
 const getRunsLoading = createSelector<
   State,
@@ -232,22 +234,35 @@ function matchFilter(
       (onHparamDiscreteFilterChanged)="onHparamDiscreteFilterChanged($event)"
       (onMetricFilterChanged)="onMetricFilterChanged($event)"
     ></runs-table-component>
-    <tb-data-table
-      *ngIf="HParamsEnabled.value"
-      [headers]="runsColumns$ | async"
-      [data]="allRunsTableData$ | async"
-      [sortingInfo]="sortingInfo$ | async"
-      columnCustomizationEnabled="true"
-      smoothingEnabled="false"
-      (sortDataBy)="sortDataBy($event)"
-      (orderColumns)="orderColumns($event)"
-    ></tb-data-table>
+    <ng-container *ngIf="HParamsEnabled.value">
+      <tb-data-table
+        [headers]="runsColumns$ | async"
+        [data]="allRunsTableData$ | async"
+        [sortingInfo]="sortingInfo$ | async"
+        columnCustomizationEnabled="true"
+        smoothingEnabled="false"
+        (sortDataBy)="sortDataBy($event)"
+        (orderColumns)="orderColumns($event)"
+      ></tb-data-table>
+      <div
+        class="full-screen-toggle"
+        [ngClass]="{'full-screen': runsTableFullScreen$ | async}"
+      >
+        <button mat-button (click)="toggleFullScreen()">
+          <mat-icon svgIcon="arrow_upward_24px"></mat-icon>
+        </button>
+      </div>
+    </ng-container>
   `,
   host: {
     '[class.flex-layout]': 'useFlexibleLayout',
   },
   styles: [
     `
+      :host {
+        position: relative;
+      }
+
       :host.flex-layout {
         display: flex;
       }
@@ -259,6 +274,37 @@ function matchFilter(
       :host.flex-layout > tb-data-table {
         overflow-y: scroll;
         width: 100%;
+      }
+
+      :host .full-screen-toggle {
+        opacity: 0;
+        position: absolute;
+        height: 100%;
+        left: 100%;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+      }
+
+      :host .full-screen-toggle mat-icon {
+        transform: rotate(90deg);
+      }
+
+      :host .full-screen-toggle.full-screen {
+        left: unset;
+        right: 0;
+      }
+
+      :host .full-screen-toggle.full-screen mat-icon {
+        transform: rotate(270deg);
+      }
+
+      :host .full-screen-toggle button {
+        background-color: gray;
+      }
+
+      :host .full-screen-toggle:hover {
+        opacity: 1;
       }
     `,
   ],
@@ -306,6 +352,7 @@ export class RunsTableContainer implements OnInit, OnDestroy {
   regexFilter$ = this.store.select(getRunSelectorRegexFilter);
   HParamsEnabled = new BehaviorSubject<boolean>(false);
   runsColumns$ = this.store.select(getRunsTableHeaders);
+  runsTableFullScreen$ = this.store.select(getRunsTableFullScreen);
 
   runToHParamValues$ = this.store
     .select(getFilteredRenderableRunsFromRoute)
@@ -753,6 +800,10 @@ export class RunsTableContainer implements OnInit, OnDestroy {
         filterUpperValue,
       })
     );
+  }
+
+  toggleFullScreen() {
+    this.store.dispatch(runsTableFullScreenToggled());
   }
 }
 

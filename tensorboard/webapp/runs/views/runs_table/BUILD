@@ -89,6 +89,7 @@ tf_ng_module(
         "//tensorboard/webapp/runs:types",
         "//tensorboard/webapp/runs/actions",
         "//tensorboard/webapp/runs/data_source",
+        "//tensorboard/webapp/core/actions",
         "//tensorboard/webapp/runs/store:selectors",
         "//tensorboard/webapp/runs/store:types",
         "//tensorboard/webapp/runs/store:utils",

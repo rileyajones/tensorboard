@@ -35,7 +35,7 @@ tf_ng_module(
         "//tensorboard/webapp/core",
         "//tensorboard/webapp/customization",
         "//tensorboard/webapp/feature_flag/store",
-        "//tensorboard/webapp/feature_flag/store:types",
+        "//tensorboard/webapp/core/store",
         "//tensorboard/webapp/metrics/actions",
         "//tensorboard/webapp/metrics/views/main_view",
         "//tensorboard/webapp/metrics/views/right_pane",
