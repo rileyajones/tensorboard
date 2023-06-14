@@ -249,7 +249,13 @@ function matchFilter(
         [ngClass]="{'full-screen': runsTableFullScreen$ | async}"
       >
         <button mat-button (click)="toggleFullScreen()">
-          <mat-icon svgIcon="arrow_upward_24px"></mat-icon>
+          <mat-icon
+            [svgIcon]="
+              (runsTableFullScreen$ | async)
+                ? 'arrow_back_24px'
+                : 'arrow_forward_24px'
+            "
+          ></mat-icon>
         </button>
       </div>
     </ng-container>
@@ -286,17 +292,9 @@ function matchFilter(
         align-items: center;
       }
 
-      :host .full-screen-toggle mat-icon {
-        transform: rotate(90deg);
-      }
-
       :host .full-screen-toggle.full-screen {
         left: unset;
         right: 0;
-      }
-
-      :host .full-screen-toggle.full-screen mat-icon {
-        transform: rotate(270deg);
       }
 
       :host .full-screen-toggle button {
