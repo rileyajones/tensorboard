@@ -42,6 +42,8 @@ import {MainViewComponent} from './main_view_component';
 import {MainViewContainer} from './main_view_container';
 import {PinnedViewComponent} from './pinned_view_component';
 import {PinnedViewContainer} from './pinned_view_container';
+import {SuggestedCardsComponent} from './suggested_cards_component';
+import {SuggestedCardsContainer} from './suggested_cards_container';
 
 @NgModule({
   declarations: [
@@ -61,6 +63,8 @@ import {PinnedViewContainer} from './pinned_view_container';
     MetricsFilterInputContainer,
     PinnedViewComponent,
     PinnedViewContainer,
+    SuggestedCardsContainer,
+    SuggestedCardsComponent,
   ],
   exports: [MainViewContainer],
   imports: [

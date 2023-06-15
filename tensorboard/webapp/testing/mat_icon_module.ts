@@ -55,6 +55,7 @@ const KNOWN_SVG_ICON = new Set([
   'notifications_none_24px',
   'palette_24px',
   'refresh_24px',
+  'science_24px',
   'search_24px',
   'settings_24px',
   'settings_backup_restore_24px',

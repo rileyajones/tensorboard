@@ -46,6 +46,17 @@ tf_sass_binary(
 )
 
 tf_sass_binary(
+    name = "suggested_cards_component_styles",
+    src = "suggested_cards_component.scss",
+    strict_deps = False,
+    deps = [
+        "//tensorboard/webapp:angular_material_sass_deps",
+        "//tensorboard/webapp/metrics/views:metrics_common_styles",
+        "//tensorboard/webapp/theme",
+    ],
+)
+
+tf_sass_binary(
     name = "card_grid_component_styles",
     src = "card_grid_component.scss",
     strict_deps = False,
@@ -119,6 +130,8 @@ tf_ng_module(
         "main_view_module.ts",
         "pinned_view_component.ts",
         "pinned_view_container.ts",
+        "suggested_cards_component.ts",
+        "suggested_cards_container.ts",
     ],
     assets = [
         "card_grid_component.ng.html",
@@ -131,6 +144,7 @@ tf_ng_module(
         ":filtered_view_component_styles",
         ":main_view_styles",
         ":pinned_view_component_styles",
+        ":suggested_cards_component_styles",
     ],
     deps = [
         ":common_selectors",

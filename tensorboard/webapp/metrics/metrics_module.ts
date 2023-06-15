@@ -46,6 +46,8 @@ import {
 } from './store/metrics_initial_state_provider';
 import {MetricsDashboardContainer} from './views/metrics_container';
 import {MetricsViewsModule} from './views/metrics_views_module';
+import {CardInteractionEffects} from './effects/card_interaction_effects';
+import {MetricsCardInteractionsDataSourceModule} from './data_source/card_interactions_data_source_module';
 
 const CREATE_PIN_MAX_EXCEEDED_TEXT =
   `Max pin limit exceeded. Remove existing` +
@@ -139,13 +141,14 @@ export function getRangeSelectionHeadersFactory() {
       MetricsDashboardContainer
     ),
     MetricsDataSourceModule,
+    MetricsCardInteractionsDataSourceModule,
     MetricsViewsModule,
     StoreModule.forFeature(
       METRICS_FEATURE_KEY,
       reducers,
       METRICS_STORE_CONFIG_TOKEN
     ),
-    EffectsModule.forFeature([MetricsEffects]),
+    EffectsModule.forFeature([MetricsEffects, CardInteractionEffects]),
     AlertActionModule.registerAlertActions(alertActionProvider),
     PersistentSettingsConfigModule.defineGlobalSetting(
       getSmoothingSettingFactory

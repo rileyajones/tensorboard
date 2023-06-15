@@ -89,6 +89,10 @@ limitations under the License.
       [style.display]="showFilteredView ? 'none' : ''"
       [cardObserver]="cardObserver"
     ></metrics-pinned-view>
+    <metrics-suggested-cards
+      [style.display]="showFilteredView ? 'none' : ''"
+      [cardObserver]="cardObserver"
+    ></metrics-suggested-cards>
     <div *ngIf="initialTagsLoading" class="loading-container">
       <mat-spinner diameter="36"></mat-spinner>
     </div>

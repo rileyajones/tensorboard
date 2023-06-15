@@ -214,6 +214,11 @@ def tensorboard_js_workspace():
                 "http://mirror.tensorflow.org/raw.githubusercontent.com/google/material-design-icons/b3f05bfbf4329a5b63f50a720f867c2bac163f98/src/navigation/arrow_forward/materialicons/24px.svg",
                 "https://raw.githubusercontent.com/google/material-design-icons/b3f05bfbf4329a5b63f50a720f867c2bac163f98/src/navigation/arrow_forward/materialicons/24px.svg",
             ],
+            "8fe8861dc87722a6b78fff29eb7e683f14d26f1b6aa55c38852caf57a3c595c2": [
+                # DO_NOT_SUBMIT add this to the mirror
+                # "http://mirror.tensorflow.org/raw.githubusercontent.com/google/material-design-icons/b3f05bfbf4329a5b63f50a720f867c2bac163f98/src/social/science/materialicons/24px.svg",
+                "https://raw.githubusercontent.com/google/material-design-icons/b3f05bfbf4329a5b63f50a720f867c2bac163f98/src/social/science/materialicons/24px.svg",
+            ],
         },
         rename = {
             "ic_arrow_downward_24px.svg": "arrow_downward_24px.svg",
@@ -284,5 +289,6 @@ def tensorboard_js_workspace():
             "https://raw.githubusercontent.com/google/material-design-icons/b3f05bfbf4329a5b63f50a720f867c2bac163f98/src/navigation/arrow_back/materialicons/24px.svg": "arrow_back_24px.svg",
             "http://mirror.tensorflow.org/raw.githubusercontent.com/google/material-design-icons/b3f05bfbf4329a5b63f50a720f867c2bac163f98/src/navigation/arrow_forward/materialicons/24px.svg": "arrow_forward_24px.svg",
             "https://raw.githubusercontent.com/google/material-design-icons/b3f05bfbf4329a5b63f50a720f867c2bac163f98/src/navigation/arrow_forward/materialicons/24px.svg": "arrow_forward_24px.svg",
+            "https://raw.githubusercontent.com/google/material-design-icons/b3f05bfbf4329a5b63f50a720f867c2bac163f98/src/social/science/materialicons/24px.svg": "science_24px.svg",
         },
     )

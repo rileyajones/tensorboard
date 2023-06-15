@@ -39,6 +39,7 @@ const RUN_COLOR_UPDATE_THROTTLE_TIME_IN_MS = 350;
   selector: 'card-view',
   template: `
     <card-view-component
+      (click)="cardClicked()"
       [isEverVisible]="isEverVisible"
       [cardId]="cardId"
       [groupName]="groupName"
@@ -90,6 +91,10 @@ export class CardViewContainer {
         };
       })
     );
+
+  cardClicked() {
+    this.store.dispatch(actions.metricsCardClicked({cardId: this.cardId}));
+  }
 
   onFullWidthChanged(showFullWidth: boolean) {
     this.fullWidthChanged.emit(showFullWidth);
