@@ -22,10 +22,10 @@ import {DataSeries} from './lib/public_types';
  * @param data DataSeries to smooth
  * @param smoothingWeight Degree of smoothing. Number between 0 and 1, inclusive.
  */
-export async function classicSmoothing(
+export function classicSmoothing(
   data: DataSeries[],
   smoothingWeight: number
-): Promise<DataSeries[]> {
+): DataSeries[] {
   if (!data.length) [];
 
   if (!Number.isFinite(smoothingWeight)) {

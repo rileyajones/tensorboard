@@ -29,8 +29,14 @@ import {
   TooltipSort,
   XAxisType,
 } from '../types';
-import {MinMaxStep} from '../views/card_renderer/scalar_card_types';
-import {formatTimeSelection} from '../views/card_renderer/utils';
+import {
+  MinMaxStep,
+  ScalarCardPoint,
+} from '../views/card_renderer/scalar_card_types';
+import {
+  formatTimeSelection,
+  partitionSeries,
+} from '../views/card_renderer/utils';
 import * as storeUtils from './metrics_store_internal_utils';
 import {
   cardRangeSelectionEnabled,
@@ -50,6 +56,8 @@ import {
 import {ColumnHeader, DataTableMode} from '../../widgets/data_table/types';
 import {Extent} from '../../widgets/line_chart_v2/lib/public_types';
 import {memoize} from '../../util/memoize';
+import {ScalarStepDatum} from '../data_source';
+import {classicSmoothing} from '../../widgets/line_chart_v2/data_transformer';
 
 const selectMetricsState =
   createFeatureSelector<MetricsState>(METRICS_FEATURE_KEY);
@@ -649,3 +657,132 @@ export const getColumnHeadersForCard = memoize((cardId: string) => {
     }
   );
 });
+
+export const getScalarPartitionedSeries = memoize((cardId: string) =>
+  createSelector(
+    selectMetricsState,
+    getMetricsXAxisType,
+    getMetricsScalarPartitionNonMonotonicX,
+    getCardMetadataMap,
+    (state, xAxisType, enablePartition, cardMetadataMap) => {
+      const nonNullRunsToScalarSeries = getLoadableTimeSeries(
+        cardMetadataMap[cardId]
+      )(state);
+      if (!nonNullRunsToScalarSeries) {
+        return;
+      }
+      const partialSeries = Object.keys(nonNullRunsToScalarSeries).map(
+        (runId) => ({
+          runId,
+          points: stepSeriesToLineSeries(
+            nonNullRunsToScalarSeries[runId] as ScalarStepDatum[],
+            xAxisType
+          ),
+        })
+      );
+
+      const potentiallyPartitioned = enablePartition
+        ? partitionSeries(partialSeries)
+        : partialSeries.map((series) => ({
+            ...series,
+            seriesId: series.runId,
+            partitionIndex: 0,
+            partitionSize: 1,
+          }));
+
+      return potentiallyPartitioned
+        .map((partitionedSeries) => {
+          const firstWallTime = partitionedSeries.points[0]?.wallTime;
+          return {
+            ...partitionedSeries,
+            points: partitionedSeries.points.map((point) => {
+              return {
+                ...point,
+                relativeTimeInMs: point.wallTime - firstWallTime,
+              };
+            }),
+          };
+        })
+        .map((partitionedSeries) => ({
+          ...partitionedSeries,
+          points: partitionedSeries.points.map((point) => {
+            let x: number;
+            switch (xAxisType) {
+              case XAxisType.RELATIVE:
+                x = point.relativeTimeInMs;
+                break;
+              case XAxisType.WALL_TIME:
+                x = point.wallTime;
+                break;
+              case XAxisType.STEP:
+              default:
+                x = point.step;
+            }
+            return {...point, x};
+          }),
+        }));
+    }
+  )
+);
+
+export const getScalarCardDataSeries = memoize((cardId: string) =>
+  createSelector(
+    getScalarPartitionedSeries(cardId),
+    getMetricsScalarSmoothing,
+    (partitionedSeries, smoothing) => {
+      if (!partitionedSeries) {
+        return;
+      }
+      const cleanedRunsData = partitionedSeries.map(({seriesId, points}) => ({
+        id: seriesId,
+        points,
+      }));
+      if (smoothing <= 0) {
+        return cleanedRunsData;
+      }
+
+      const smoothedDataSeriesList = classicSmoothing(
+        cleanedRunsData,
+        smoothing
+      );
+      const smoothedList = cleanedRunsData.map((dataSeries, index) => {
+        return {
+          id: getSmoothedSeriesId(dataSeries.id),
+          points: smoothedDataSeriesList[index].points.map(
+            ({y}, pointIndex) => {
+              return {...dataSeries.points[pointIndex], y};
+            }
+          ),
+        };
+      });
+      return [...cleanedRunsData, ...smoothedList];
+    }
+  )
+);
+
+function getSmoothedSeriesId(seriesId: string): string {
+  return JSON.stringify(['smoothed', seriesId]);
+}
+
+function stepSeriesToLineSeries(
+  stepSeries: ScalarStepDatum[],
+  xAxisType: XAxisType
+): ScalarCardPoint[] {
+  const isStepBased = xAxisType === XAxisType.STEP;
+  return stepSeries.map((stepDatum) => {
+    // Normalize data and convert wallTime in seconds to milliseconds.
+    // TODO(stephanwlee): when the legacy line chart is removed, do the conversion
+    // at the effects.
+    const wallTime = stepDatum.wallTime * 1000;
+    return {
+      ...stepDatum,
+      x: isStepBased ? stepDatum.step : wallTime,
+      y: stepDatum.value,
+      wallTime,
+      // Put a fake relative time so we can work around with types too much.
+      // The real value would be set after we partition the timeseries so
+      // we can have a relative time per partition.
+      relativeTimeInMs: 0,
+    };
+  });
+}

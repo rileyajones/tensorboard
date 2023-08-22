@@ -23,17 +23,15 @@ import {
   Output,
 } from '@angular/core';
 import {Store} from '@ngrx/store';
-import {combineLatest, from, Observable, of, Subject} from 'rxjs';
+import {combineLatest, Observable, Subject} from 'rxjs';
 import {
   combineLatestWith,
   debounceTime,
-  distinctUntilChanged,
   filter,
   map,
   shareReplay,
   startWith,
   switchMap,
-  takeUntil,
 } from 'rxjs/operators';
 import {State} from '../../../app_state';
 import {ExperimentAlias} from '../../../experiments/types';
@@ -58,6 +56,8 @@ import {
   getRunColorMap,
   getCurrentRouteRunSelection,
   getColumnHeadersForCard,
+  getScalarPartitionedSeries,
+  getScalarCardDataSeries,
 } from '../../../selectors';
 import {DataLoadState} from '../../../types/data';
 import {
@@ -65,7 +65,6 @@ import {
   TimeSelectionToggleAffordance,
   TimeSelectionWithAffordance,
 } from '../../../widgets/card_fob/card_fob_types';
-import {classicSmoothing} from '../../../widgets/line_chart_v2/data_transformer';
 import {Extent} from '../../../widgets/line_chart_v2/lib/public_types';
 import {ScaleType} from '../../../widgets/line_chart_v2/types';
 import {
@@ -84,22 +83,13 @@ import {
   CardState,
   getCardLoadState,
   getCardMetadata,
-  getCardTimeSeries,
   getMetricsCardMinMax,
   getMetricsIgnoreOutliers,
-  getMetricsScalarPartitionNonMonotonicX,
   getMetricsScalarSmoothing,
   getMetricsTooltipSort,
   getMetricsXAxisType,
-  RunToSeries,
 } from '../../store';
-import {
-  CardId,
-  CardMetadata,
-  HeaderEditInfo,
-  HeaderToggleInfo,
-  XAxisType,
-} from '../../types';
+import {CardId, CardMetadata, HeaderEditInfo, XAxisType} from '../../types';
 import {getFilteredRenderableRunsIdsFromRoute} from '../main_view/common_selectors';
 import {CardRenderer} from '../metrics_view_types';
 import {getTagDisplayName} from '../utils';
@@ -118,42 +108,11 @@ import {
   DataTableMode,
   SortingInfo,
 } from '../../../widgets/data_table/types';
-import {
-  maybeClipTimeSelectionView,
-  partitionSeries,
-  TimeSelectionView,
-} from './utils';
+import {maybeClipTimeSelectionView, TimeSelectionView} from './utils';
 
 type ScalarCardMetadata = CardMetadata & {
   plugin: PluginType.SCALARS;
 };
-
-function areSeriesEqual(
-  listA: PartialSeries[],
-  listB: PartialSeries[]
-): boolean {
-  if (listA.length !== listB.length) {
-    return false;
-  }
-  return listA.every((listAVal, index) => {
-    const listBVal = listB[index];
-    const listAPoints = listAVal.points;
-    const listBPoints = listBVal.points;
-    return (
-      listAVal.runId === listBVal.runId &&
-      listAPoints.length === listBPoints.length &&
-      listAPoints.every((listAPoint, index) => {
-        const listBPoint = listBPoints[index];
-        return listAPoint.x === listBPoint.x && listAPoint.y === listBPoint.y;
-      })
-    );
-  });
-}
-
-function isMinMaxStepValid(minMax: MinMaxStep | undefined): boolean {
-  if (!minMax) return false;
-  return !(minMax.minStep === -Infinity && minMax.maxStep === Infinity);
-}
 
 @Component({
   selector: 'scalar-card',
@@ -300,92 +259,13 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
       })
     );
 
-    const nonNullRunsToScalarSeries$ = this.store
-      .select(getCardTimeSeries, this.cardId)
-      .pipe(
-        takeUntil(this.ngUnsubscribe),
-        filter((runToSeries) => Boolean(runToSeries)),
-        map((runToSeries) => runToSeries as RunToSeries<PluginType.SCALARS>),
-        shareReplay(1)
-      );
-
-    const partialSeries$ = nonNullRunsToScalarSeries$.pipe(
-      combineLatestWith(this.store.select(getMetricsXAxisType)),
-      map(([runToSeries, xAxisType]) => {
-        const runIds = Object.keys(runToSeries);
-        const results = runIds.map((runId) => {
-          return {
-            runId,
-            points: this.stepSeriesToLineSeries(runToSeries[runId], xAxisType),
-          };
-        });
-        return results;
-      }),
-      distinctUntilChanged(areSeriesEqual)
-    );
-
     function getSmoothedSeriesId(seriesId: string): string {
       return JSON.stringify(['smoothed', seriesId]);
     }
 
-    const partitionedSeries$ = partialSeries$.pipe(
-      combineLatestWith(
-        this.store.select(getMetricsScalarPartitionNonMonotonicX)
-      ),
-      takeUntil(this.ngUnsubscribe),
-      map<[PartialSeries[], boolean], PartitionedSeries[]>(
-        ([normalizedSeries, enablePartition]) => {
-          if (enablePartition) return partitionSeries(normalizedSeries);
-
-          return normalizedSeries.map((series) => {
-            return {
-              ...series,
-              seriesId: series.runId,
-              partitionIndex: 0,
-              partitionSize: 1,
-            };
-          });
-        }
-      ),
-      map((partitionedSeriesList) => {
-        return partitionedSeriesList.map((partitionedSeries) => {
-          const firstWallTime = partitionedSeries.points[0]?.wallTime;
-          return {
-            ...partitionedSeries,
-            points: partitionedSeries.points.map((point) => {
-              return {
-                ...point,
-                relativeTimeInMs: point.wallTime - firstWallTime,
-              };
-            }),
-          };
-        });
-      }),
-      combineLatestWith(this.store.select(getMetricsXAxisType)),
-      map(([partitionedSeriesList, xAxisType]) => {
-        return partitionedSeriesList.map((series) => {
-          return {
-            ...series,
-            points: series.points.map((point) => {
-              let x: number;
-              switch (xAxisType) {
-                case XAxisType.RELATIVE:
-                  x = point.relativeTimeInMs;
-                  break;
-                case XAxisType.WALL_TIME:
-                  x = point.wallTime;
-                  break;
-                case XAxisType.STEP:
-                default:
-                  x = point.step;
-              }
-              return {...point, x};
-            }),
-          };
-        });
-      }),
-      shareReplay(1)
-    );
+    const partitionedSeries$ = this.store
+      .select(getScalarPartitionedSeries(this.cardId))
+      .pipe(filter(Boolean), shareReplay(1));
 
     this.userViewBox$ = this.store.select(
       getMetricsCardUserViewBox,
@@ -407,39 +287,9 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
       })
     );
 
-    this.dataSeries$ = partitionedSeries$.pipe(
-      // Smooth
-      combineLatestWith(this.store.select(getMetricsScalarSmoothing)),
-      switchMap<
-        [PartitionedSeries[], number],
-        Observable<ScalarCardDataSeries[]>
-      >(([runsData, smoothing]) => {
-        const cleanedRunsData = runsData.map(({seriesId, points}) => ({
-          id: seriesId,
-          points,
-        }));
-        if (smoothing <= 0) {
-          return of(cleanedRunsData);
-        }
-
-        return from(classicSmoothing(cleanedRunsData, smoothing)).pipe(
-          map((smoothedDataSeriesList) => {
-            const smoothedList = cleanedRunsData.map((dataSeries, index) => {
-              return {
-                id: getSmoothedSeriesId(dataSeries.id),
-                points: smoothedDataSeriesList[index].points.map(
-                  ({y}, pointIndex) => {
-                    return {...dataSeries.points[pointIndex], y};
-                  }
-                ),
-              };
-            });
-            return [...cleanedRunsData, ...smoothedList];
-          })
-        );
-      }),
-      startWith([] as ScalarCardDataSeries[])
-    );
+    this.dataSeries$ = this.store
+      .select(getScalarCardDataSeries(this.cardId))
+      .pipe(filter(Boolean), startWith([] as ScalarCardDataSeries[]));
 
     this.linkedTimeSelection$ = combineLatest([
       this.minMaxSteps$,
@@ -625,29 +475,6 @@ export class ScalarCardContainer implements CardRenderer, OnInit, OnDestroy {
         };
       })
     );
-  }
-
-  private stepSeriesToLineSeries(
-    stepSeries: ScalarStepDatum[],
-    xAxisType: XAxisType
-  ): ScalarCardPoint[] {
-    const isStepBased = xAxisType === XAxisType.STEP;
-    return stepSeries.map((stepDatum) => {
-      // Normalize data and convert wallTime in seconds to milliseconds.
-      // TODO(stephanwlee): when the legacy line chart is removed, do the conversion
-      // at the effects.
-      const wallTime = stepDatum.wallTime * 1000;
-      return {
-        ...stepDatum,
-        x: isStepBased ? stepDatum.step : wallTime,
-        y: stepDatum.value,
-        wallTime,
-        // Put a fake relative time so we can work around with types too much.
-        // The real value would be set after we partition the timeseries so
-        // we can have a relative time per partition.
-        relativeTimeInMs: 0,
-      };
-    });
   }
 
   onDataTableSorting(sortingInfo: SortingInfo) {
