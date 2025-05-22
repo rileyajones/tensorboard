@@ -97,12 +97,13 @@ $tb-theme: map_merge(
   )
 );
 $tb-theme: map_merge(
-    $tb-theme,
-    color,
-    system,
-    (
-      on-surface: /*m2*/ mat.get-color-from-palette(/*m2$*/ mat.$gray-palette, 900)
-    )
+  $tb-theme,
+  color,
+  system,
+  (
+    on-surface: /*m2*/
+      mat.get-color-from-palette(/*m2$*/ mat.$gray-palette, 900),
+  )
 );
 
 $tb-dark-theme: /*m2*/ mat.define-dark-theme(
