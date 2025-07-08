@@ -11,6 +11,16 @@ ENV BUILDTOOLS_VERSION='3.0.0'
 ENV BUILDIFIER_SHA256SUM='e92a6793c7134c5431c58fbc34700664f101e5c9b1c1fcd93b97978e8b7f88db'
 ENV BUILDOZER_SHA256SUM='3d58a0b6972e4535718cdd6c12778170ea7382de7c75bc3728f5719437ffb84d'
 ENV TENSORFLOW_VERSION='tf-nightly'
+ENV NVM_DIR="$HOME/.nvm"
+ENV NODE_VERSION=22
+
+# Installing NVM
+RUN wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash && nvm install "$NODE_VERSION" && nvm use "$NODE_VERSION"
+
+# TODO load this
+# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+# [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
 
 RUN mkdir /tensorboard
 WORKDIR /tensorboard
